@@ -1,10 +1,10 @@
+use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
-use serde::Serialize;
 use tokio::sync::Mutex;
 
 pub struct InMemoryDatabase<T: Serialize + Send + Sync + Clone> {
-    pub data: Arc<Mutex<HashMap<String, Vec<T>>>>,
+    data: Arc<Mutex<HashMap<String, Vec<T>>>>,
 }
 
 impl<T: Serialize + Send + Sync + Clone> InMemoryDatabase<T> {
@@ -28,7 +28,7 @@ impl<T: Serialize + Send + Sync + Clone> InMemoryDatabase<T> {
 }
 
 #[cfg(test)]
-mod database {
+mod in_memory_database {
     use super::*;
     use rstest::rstest;
 
@@ -36,30 +36,19 @@ mod database {
     struct User {
         name: String,
     }
+    const TABLE_NAME: &str = "users";
 
     #[rstest]
     #[tokio::test]
-    async fn should_store_data() {
-        let db = InMemoryDatabase::new();
-        let user = User { name: "John".to_string() };
-        db.store("user", user.clone()).await;
-        let data = db.data.lock().await;
-        
-        assert_eq!(data.get("user").unwrap().len(), 1);
-        assert_eq!(data.get("user").unwrap()[0].name, "John");
-    }
-
-    #[rstest]
-    #[tokio::test]
-    async fn should_retrieve_the_data() {
+    async fn should_store_and_retrieve_the_data() {
         let db = InMemoryDatabase::new();
         let user = User {
-            name: "John".to_string(),
+            name: "Elon Musk".to_string(),
         };
-        db.store("user", user).await;
-        let data = db.query("user").await;
+        db.store(TABLE_NAME, user.clone()).await;
+        let data = db.query(TABLE_NAME).await;
 
         assert_eq!(data.len(), 1);
-        assert_eq!(data[0].name, "John");
+        assert_eq!(data[0].name, user.name);
     }
 }
