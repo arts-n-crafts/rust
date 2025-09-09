@@ -51,4 +51,37 @@ mod in_memory_database {
         assert_eq!(data.len(), 1);
         assert_eq!(data[0].name, user.name);
     }
+
+    #[rstest]
+    #[tokio::test]
+    async fn should_store_and_retrieve_multiple_data() {
+        let db = InMemoryDatabase::new();
+        db.store(
+            TABLE_NAME,
+            User {
+                name: "Elon Musk".to_string(),
+            },
+        ).await;
+        db.store(
+            TABLE_NAME,
+            User {
+                name: "Donald Trump".to_string(),
+            },
+        ).await;
+        db.store(
+            TABLE_NAME,
+            User {
+                name: "Bill Gates".to_string(),
+            },
+        ).await;
+        db.store(
+            TABLE_NAME,
+            User {
+                name: "Barack Obama".to_string(),
+            },
+        ).await;
+        let data = db.query(TABLE_NAME).await;
+
+        assert_eq!(data.len(), 4);
+    }
 }
