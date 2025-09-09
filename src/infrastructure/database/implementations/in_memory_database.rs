@@ -20,6 +20,11 @@ impl<T: Serialize + Send + Sync + Clone> InMemoryDatabase<T> {
             .or_insert_with(Vec::new)
             .push(value);
     }
+
+    async fn query(&self, table_name: &str) -> Vec<T> {
+        let data = self.data.lock().await;
+        data.get(table_name).map(|v| v.to_vec()).unwrap_or_default()
+    }
 }
 
 #[cfg(test)]
@@ -42,5 +47,19 @@ mod database {
         
         assert_eq!(data.get("user").unwrap().len(), 1);
         assert_eq!(data.get("user").unwrap()[0].name, "John");
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn should_retrieve_the_data() {
+        let db = InMemoryDatabase::new();
+        let user = User {
+            name: "John".to_string(),
+        };
+        db.store("user", user).await;
+        let data = db.query("user").await;
+
+        assert_eq!(data.len(), 1);
+        assert_eq!(data[0].name, "John");
     }
 }
