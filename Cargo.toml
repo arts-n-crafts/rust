@@ -4,11 +4,16 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-async-trait = "0.1.89"
-serde = "1.0.219"
+chrono = "0.4.42"
+serde = { version = "1.0.219", features = ["derive"] }
 tokio = { version = "1.47.1", features = ["sync", "rt"] }
 
 [dev-dependencies]
 tokio = { version = "1.47.1", features = ["macros", "rt", "test-util"] }
+futures = "0.3.31"
 rstest = "0.26.1"
-sqlx = { version = "0.8.6", features = ["sqlite", "runtime-tokio"] }
+chrono = "0.4.42"
+
+[dependencies.uuid]
+version = "1.18.1"
+features = ["v7", ]
