@@ -1,33 +1,34 @@
-use chrono::NaiveDateTime;
+use chrono::{Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum EventSource {
     Internal,
     External,
 }
 
-pub struct DomainEvent<TPayload: Serialize + Send + Sync + Clone> {
+#[derive(Serialize, Debug, PartialEq, Clone)]
+pub struct DomainEvent<'a, TPayload: Serialize + Send + Sync + Clone> {
     id: Uuid,
-    name: String,
+    name: &'a str,
     aggregate_id: Uuid,
     source: EventSource,
     payload: TPayload,
-    timestamp: NaiveDateTime,
+    timestamp: i64,
     metadata: HashMap<String, String>,
 }
 
-impl<TPayload: Serialize + Send + Sync + Clone> DomainEvent<TPayload> {
-    pub fn create(name: String, aggregate_id: Uuid, payload: TPayload) -> Self {
+impl<'a, TPayload: Serialize + Send + Sync + Clone> DomainEvent<'a, TPayload> {
+    pub fn create(name: &'a str, aggregate_id: Uuid, payload: TPayload) -> Self {
         DomainEvent {
             id: Uuid::now_v7(),
             name,
             aggregate_id,
             source: EventSource::Internal,
             payload,
-            timestamp: Default::default(),
+            timestamp: Utc::now().timestamp_millis(),
             metadata: HashMap::new(),
         }
     }
@@ -61,19 +62,19 @@ mod create_domain_event_tests {
     }
 
     #[fixture]
-    fn fixture() -> (DomainEvent<User>, String, Uuid, User) {
-        let event_name = "user_created".to_string();
+    fn fixture<'a>() -> (DomainEvent<'static, User>, &'a str, Uuid, User) {
+        let event_name = "user_created";
         let aggregate_id = Uuid::now_v7();
         let payload: User = User {
             id: 1,
             name: "John".to_string(),
         };
-        let event = DomainEvent::create(event_name.clone(), aggregate_id.clone(), payload.clone());
+        let event = DomainEvent::create(event_name, aggregate_id.clone(), payload.clone());
         (event, event_name, aggregate_id, payload)
     }
 
     #[rstest]
-    fn it_should_create_a_domain_event(fixture: (DomainEvent<User>, String, Uuid, User)) {
+    fn it_should_create_a_domain_event<'a>(fixture: (DomainEvent<User>, &'a str, Uuid, User)) {
         let (event, event_name, aggregate_id, payload) = fixture;
         assert_eq!(event.name, event_name);
         assert_eq!(event.aggregate_id, aggregate_id);
@@ -83,8 +84,8 @@ mod create_domain_event_tests {
     }
 
     #[rstest]
-    fn it_should_add_metadata_causation_id_and_correlation_id(
-        fixture: (DomainEvent<User>, String, Uuid, User),
+    fn it_should_add_metadata_causation_id_and_correlation_id<'a>(
+        fixture: (DomainEvent<User>, &'a str, Uuid, User),
     ) {
         let mut event = fixture.0;
         let causation_id = Uuid::now_v7();
