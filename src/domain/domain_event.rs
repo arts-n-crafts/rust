@@ -13,7 +13,7 @@ pub enum EventSource {
 pub struct DomainEvent<'a, TPayload: Serialize + Send + Sync + Clone> {
     id: Uuid,
     name: &'a str,
-    aggregate_id: Uuid,
+    pub aggregate_id: Uuid,
     source: EventSource,
     payload: TPayload,
     timestamp: i64,
