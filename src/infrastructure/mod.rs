@@ -1,5 +1,5 @@
-mod event_store;
 mod event_store {
+    pub mod stored_event;
     pub mod stream_key;
 }
 mod event_bus;
