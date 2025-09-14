@@ -1,11 +1,9 @@
 #[cfg(test)]
 mod common;
-
 use async_trait::async_trait;
 use common::user::User;
 use rstest::{fixture, rstest};
-use arts_and_crafts_rs::infrastructure::database::database_error::DatabaseError;
-use arts_and_crafts_rs::infrastructure::database::in_memory_database::InMemoryDatabase;
+use arts_and_crafts_rs::infrastructure::database::in_memory_database::{DatabaseError, InMemoryDatabase};
 use arts_and_crafts_rs::infrastructure::database::database_query::DatabaseQuery;
 
 struct GetUsersNamedJohn {
@@ -19,7 +17,7 @@ impl GetUsersNamedJohn {
 }
 
 #[async_trait]
-impl DatabaseQuery<User> for GetUsersNamedJohn {
+impl DatabaseQuery<User, DatabaseError> for GetUsersNamedJohn {
     async fn execute(&self) -> Result<Vec<User>, DatabaseError> {
         let users = self.db.query("users").await?;
         Ok(users
@@ -91,4 +89,5 @@ async fn should_fail_if_the_database_is_offline() {
     let get_users_named_john = GetUsersNamedJohn::new(db);
     let result = get_users_named_john.execute().await;
     assert!(result.is_err());
+    assert_eq!(result.err(), Some(DatabaseError::Unreachable));
 }

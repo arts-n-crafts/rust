@@ -1,10 +1,9 @@
 use async_trait::async_trait;
-use crate::infrastructure::database::database_error::DatabaseError;
 use serde::Serialize;
 
 #[async_trait]
-pub trait DatabaseQuery<T: Serialize + Send + Sync + Clone> {
-    async fn execute(&self) -> Result<Vec<T>, DatabaseError>;
+pub trait DatabaseQuery<T: Serialize + Send + Sync + Clone, E> {
+    async fn execute(&self) -> Result<Vec<T>, E>;
 }
 
 #[cfg(test)]
@@ -22,10 +21,10 @@ mod database_query {
     struct GetUsersNamedJohn {
         users: Vec<User>,
     }
-    
+
     #[async_trait]
-    impl DatabaseQuery<User> for GetUsersNamedJohn {
-        async fn execute(&self) -> Result<Vec<User>, DatabaseError> {
+    impl DatabaseQuery<User, ()> for GetUsersNamedJohn {
+        async fn execute(&self) -> Result<Vec<User>, ()> {
             let result = self
                 .users
                 .iter()

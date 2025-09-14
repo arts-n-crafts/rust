@@ -1,8 +1,13 @@
-use crate::infrastructure::database::database_error::DatabaseError;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+
+#[derive(Debug, PartialEq)]
+pub enum DatabaseError {
+    Unreachable,
+}
+
 
 pub struct InMemoryDatabase<T: Serialize + Send + Sync + Clone> {
     data: Arc<Mutex<HashMap<String, Vec<T>>>>,
@@ -23,9 +28,7 @@ impl<T: Serialize + Send + Sync + Clone> InMemoryDatabase<T> {
 
     pub async fn store(&self, key: &str, value: T) -> Result<(), DatabaseError> {
         if self.is_offline {
-            return Err(DatabaseError::DatabaseStoreError(Box::from(
-                "Database unreachable",
-            )));
+            return Err(DatabaseError::Unreachable);
         }
         let mut data = self.data.lock().await;
         data.entry(key.to_owned())
@@ -37,9 +40,7 @@ impl<T: Serialize + Send + Sync + Clone> InMemoryDatabase<T> {
 
     pub async fn query(&self, table_name: &str) -> Result<Vec<T>, DatabaseError> {
         if self.is_offline {
-            return Err(DatabaseError::DatabaseStoreError(Box::from(
-                "Database unreachable",
-            )));
+            return Err(DatabaseError::Unreachable);
         }
 
         let data = self.data.lock().await;
@@ -79,6 +80,7 @@ mod in_memory_database {
         db.go_offline();
         let result = db.store(TABLE_NAME, user[0].to_owned()).await;
         assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), DatabaseError::Unreachable);
     }
 
     #[rstest]
@@ -99,5 +101,6 @@ mod in_memory_database {
         db.go_offline();
         let result = db.query(TABLE_NAME).await;
         assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), DatabaseError::Unreachable);
     }
 }
