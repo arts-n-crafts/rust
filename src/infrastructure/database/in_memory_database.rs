@@ -1,6 +1,7 @@
 use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
+use async_trait::async_trait;
 use tokio::sync::Mutex;
 use crate::infrastructure::database::database::{Database};
 use crate::infrastructure::database::database_error::DatabaseError;
@@ -23,6 +24,7 @@ impl<T: Serialize + Send + Sync + Clone> InMemoryDatabase<T> {
     }
 }
 
+#[async_trait]
 impl<T: Serialize + Send + Sync + Clone> Database<T> for InMemoryDatabase<T> {
     async fn store(&self, key: &str, value: T) -> Result<(), DatabaseError> {
         if self.is_offline {

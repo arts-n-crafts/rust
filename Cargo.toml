@@ -7,6 +7,7 @@ edition = "2021"
 chrono = "0.4.42"
 serde = { version = "1.0.219", features = ["derive"] }
 tokio = { version = "1.47.1", features = ["sync", "rt"] }
+async-trait = "0.1.89"
 
 [dev-dependencies]
 tokio = { version = "1.47.1", features = ["macros", "rt", "test-util"] }
