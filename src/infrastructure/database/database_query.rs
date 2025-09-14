@@ -1,7 +1,8 @@
+use crate::infrastructure::database::database_error::DatabaseError;
 use serde::Serialize;
 
 pub trait DatabaseQuery<T: Serialize + Send + Sync + Clone> {
-    async fn execute(&self) -> Vec<T>;
+    async fn execute(&self) -> Result<Vec<T>, DatabaseError>;
 }
 
 #[cfg(test)]
@@ -17,15 +18,17 @@ mod database_query {
     }
 
     struct GetUsersNamedJohn {
-        users: Vec<User>
+        users: Vec<User>,
     }
     impl DatabaseQuery<User> for GetUsersNamedJohn {
-        async fn execute(&self) -> Vec<User> {
-            self.users
+        async fn execute(&self) -> Result<Vec<User>, DatabaseError> {
+            let result = self
+                .users
                 .iter()
                 .filter(|user| user.name == "John")
                 .cloned()
-                .collect()
+                .collect();
+            Ok(result)
         }
     }
 
@@ -59,7 +62,10 @@ mod database_query {
     #[tokio::test]
     async fn should_retrieve_an_empty_vec_when_there_are_no_users(empty_users: Vec<User>) {
         let get_users_named_john = GetUsersNamedJohn { users: empty_users };
-        let result = get_users_named_john.execute().await;
+        let result = get_users_named_john
+            .execute()
+            .await
+            .expect("failed to execute get_users_named_john");
         assert!(result.is_empty());
     }
 
@@ -67,7 +73,10 @@ mod database_query {
     #[tokio::test]
     async fn should_retrieve_all_users_named_john(with_users: Vec<User>) {
         let get_users_named_john = GetUsersNamedJohn { users: with_users };
-        let result = get_users_named_john.execute().await;
+        let result = get_users_named_john
+            .execute()
+            .await
+            .expect("failed to execute get_users_named_john");
         assert_eq!(result.len(), 2);
         assert_eq!(result[0].id, 1);
         assert_eq!(result[1].id, 4);

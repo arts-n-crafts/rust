@@ -1,10 +1,5 @@
 use serde::{Serialize};
-
-#[derive(Debug)]
-pub enum DatabaseError {
-    DatabaseStoreError(Box<dyn std::error::Error>),
-    DatabaseQueryError(Box<dyn std::error::Error>),
-}
+use crate::infrastructure::database::database_error::DatabaseError;
 
 pub trait Database<T>
 where

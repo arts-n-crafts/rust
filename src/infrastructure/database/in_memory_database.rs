@@ -2,7 +2,8 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use crate::infrastructure::database::database::{Database, DatabaseError};
+use crate::infrastructure::database::database::{Database};
+use crate::infrastructure::database::database_error::DatabaseError;
 
 pub struct InMemoryDatabase<T: Serialize + Send + Sync + Clone> {
     data: Arc<Mutex<HashMap<String, Vec<T>>>>,
