@@ -1,10 +1,9 @@
 mod event_store;
 mod event_bus;
 mod database {
-    mod executable;
-    mod implementations {
-        mod in_memory_database;
-    }
+    mod database;
+    mod database_query;
+    pub mod in_memory_database;
 }
 
 mod outbox;
