@@ -1,10 +1,8 @@
+use crate::infrastructure::database::database_error::DatabaseError;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
-use async_trait::async_trait;
 use tokio::sync::Mutex;
-use crate::infrastructure::database::database::{Database};
-use crate::infrastructure::database::database_error::DatabaseError;
 
 pub struct InMemoryDatabase<T: Serialize + Send + Sync + Clone> {
     data: Arc<Mutex<HashMap<String, Vec<T>>>>,
@@ -22,15 +20,12 @@ impl<T: Serialize + Send + Sync + Clone> InMemoryDatabase<T> {
     pub fn go_offline(&mut self) {
         self.is_offline = true
     }
-}
 
-#[async_trait]
-impl<T: Serialize + Send + Sync + Clone> Database<T> for InMemoryDatabase<T> {
-    async fn store(&self, key: &str, value: T) -> Result<(), DatabaseError> {
+    pub async fn store(&self, key: &str, value: T) -> Result<(), DatabaseError> {
         if self.is_offline {
-            return Err(DatabaseError::DatabaseStoreError(
-                Box::from("Database unreachable")
-            ));
+            return Err(DatabaseError::DatabaseStoreError(Box::from(
+                "Database unreachable",
+            )));
         }
         let mut data = self.data.lock().await;
         data.entry(key.to_owned())
@@ -40,18 +35,15 @@ impl<T: Serialize + Send + Sync + Clone> Database<T> for InMemoryDatabase<T> {
         Ok(())
     }
 
-    async fn query(&self, table_name: &str) -> Result<Vec<T>, DatabaseError> {
+    pub async fn query(&self, table_name: &str) -> Result<Vec<T>, DatabaseError> {
         if self.is_offline {
-            return Err(DatabaseError::DatabaseStoreError(
-                Box::from("Database unreachable")
-            ));
+            return Err(DatabaseError::DatabaseStoreError(Box::from(
+                "Database unreachable",
+            )));
         }
 
         let data = self.data.lock().await;
-        let result = data
-            .get(table_name)
-            .map(|v| v.clone())
-            .unwrap_or_default();
+        let result = data.get(table_name).map(|v| v.clone()).unwrap_or_default();
         Ok(result)
     }
 }
@@ -67,11 +59,9 @@ mod in_memory_database {
     }
     #[fixture]
     fn user() -> Vec<User> {
-        vec![
-            User {
-                name: "John".to_string(),
-            }
-        ]
+        vec![User {
+            name: "John".to_string(),
+        }]
     }
 
     #[rstest]
@@ -95,7 +85,9 @@ mod in_memory_database {
     #[tokio::test]
     async fn should_query_the_data(user: Vec<User>) {
         let db = InMemoryDatabase::new();
-        db.store(TABLE_NAME, user[0].to_owned()).await.expect("unexpected store failed");
+        db.store(TABLE_NAME, user[0].to_owned())
+            .await
+            .expect("unexpected store failed");
         let result = db.query(TABLE_NAME).await;
         assert!(result.is_ok());
     }

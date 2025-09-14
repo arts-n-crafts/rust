@@ -4,23 +4,22 @@ mod common;
 use async_trait::async_trait;
 use common::user::User;
 use rstest::{fixture, rstest};
-use arts_and_crafts_rs::infrastructure::database::database::{Database};
 use arts_and_crafts_rs::infrastructure::database::database_error::DatabaseError;
 use arts_and_crafts_rs::infrastructure::database::in_memory_database::InMemoryDatabase;
 use arts_and_crafts_rs::infrastructure::database::database_query::DatabaseQuery;
 
-struct GetUsersNamedJohn<TDatabase> {
-    db: TDatabase,
+struct GetUsersNamedJohn {
+    db: InMemoryDatabase<User>,
 }
 
-impl<TDatabase> GetUsersNamedJohn<TDatabase> {
-    pub fn new(db: TDatabase) -> Self {
+impl GetUsersNamedJohn {
+    pub fn new(db: InMemoryDatabase<User>) -> Self {
         GetUsersNamedJohn { db }
     }
 }
 
 #[async_trait]
-impl DatabaseQuery<User> for GetUsersNamedJohn<InMemoryDatabase<User>> {
+impl DatabaseQuery<User> for GetUsersNamedJohn {
     async fn execute(&self) -> Result<Vec<User>, DatabaseError> {
         let users = self.db.query("users").await?;
         Ok(users
