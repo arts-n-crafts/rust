@@ -1,4 +1,7 @@
 mod event_store;
+mod event_store {
+    pub mod stream_key;
+}
 mod event_bus;
 pub mod database {
     pub mod database_error;
