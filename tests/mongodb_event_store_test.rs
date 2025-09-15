@@ -1,17 +1,158 @@
 #[cfg(test)]
-use mongodb::{Client, options::ClientOptions};
-use rstest::rstest;
+use arts_and_crafts_rs::domain::domain_event::DomainEvent;
+use arts_and_crafts_rs::infrastructure::event_store::event_store::{EventStore, EventStoreError};
+use arts_and_crafts_rs::infrastructure::event_store::stream_key::StreamKey;
+use chrono::Utc;
+use dotenvy::dotenv;
+use futures::future::join_all;
+use futures::TryStreamExt;
+use mongodb::bson::{doc, from_document, to_document, Document};
+use mongodb::options::FindOptions;
+use mongodb::{options::ClientOptions, Client};
+use mongodb::{Collection, Database};
+use rstest::{rstest};
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+mod common;
+use common::user_created_event::generate_user_created_event;
+use crate::common::user::User;
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct MongoStoredEvent<TEvent>
+where
+    TEvent: Serialize + Send + Sync + Clone,
+{
+    pub _id: Uuid,
+    stream_key: StreamKey,
+    version: u8,
+    pub event: TEvent,
+    timestamp: i64,
+}
+
+impl<TEvent> MongoStoredEvent<TEvent>
+where
+    TEvent: Serialize + Send + Sync + Clone,
+{
+    pub fn new(stream_key: StreamKey, version: u8, event: TEvent) -> Self {
+        MongoStoredEvent {
+            _id: Uuid::now_v7(),
+            stream_key,
+            version,
+            event,
+            timestamp: Utc::now().timestamp_millis(),
+        }
+    }
+}
+
+pub struct MongodbEventStore {
+    collection: Collection<Document>,
+}
+
+impl MongodbEventStore {
+    pub async fn new() -> Self {
+        let username = std::env::var("MONGO_INITDB_ROOT_USERNAME")
+            .expect("MONGO_INITDB_ROOT_USERNAME not set");
+        let password = std::env::var("MONGO_INITDB_ROOT_PASSWORD")
+            .expect("MONGO_INITDB_ROOT_PASSWORD not set");
+        let connection_string = format!("mongodb://{}:{}@localhost:27017", username, password);
+        let client_options = ClientOptions::parse(connection_string)
+            .await
+            .expect("Failed to create ClientOptions.");
+        let client = Client::with_options(client_options).expect("Failed to create Client.");
+        let db: Database = client.database("test");
+        let collection: Collection<Document> = db.collection("event_store");
+        MongodbEventStore { collection }
+    }
+}
+
+impl<TEvent> EventStore<TEvent> for MongodbEventStore
+where
+    TEvent: Serialize + DeserializeOwned + Send + Sync + Clone,
+{
+    async fn append(&self, stream_key: StreamKey, event: TEvent) -> Result<(), EventStoreError> {
+        let stored_event = MongoStoredEvent::new(stream_key, 1, event);
+        let doc = to_document(&stored_event).map_err(|_| EventStoreError::AppendError)?;
+
+        self.collection
+            .insert_one(doc)
+            .await
+            // .map_err(|e| EventStoreError::AppendError(e.to_string()))?;
+            .map_err(|_| EventStoreError::AppendError)?;
+
+        Ok(())
+    }
+
+    async fn load(&self, stream_key: StreamKey) -> Result<Vec<TEvent>, EventStoreError> {
+        let filter = doc! { "stream_key": &stream_key.as_str() };
+        let find_options = FindOptions::builder().sort(doc! { "timestamp": 1 }).build();
+
+        let mut cursor = self
+            .collection
+            .find(filter)
+            .with_options(find_options)
+            .await
+            .map_err(|_| EventStoreError::LoadError)?;
+
+        let mut stored_events = Vec::new();
+        while let Some(doc) = cursor
+            .try_next()
+            .await
+            .map_err(|_| EventStoreError::LoadError)?
+        {
+            let stored_event: MongoStoredEvent<TEvent> =
+                from_document(doc).map_err(|_| EventStoreError::LoadError)?;
+            stored_events.push(stored_event);
+        }
+
+        Ok(stored_events
+            .iter()
+            .map(|stored_event| stored_event.event.clone())
+            .collect())
+    }
+}
 
 #[rstest]
 #[tokio::test]
 #[ignore]
-async fn mongodb_should_connect() {
-    let username = std::env::var("MONGO_INITDB_ROOT_USERNAME").expect("MONGO_INITDB_ROOT_USERNAME not set");
-    let password = std::env::var("MONGO_INITDB_ROOT_PASSWORD").expect("MONGO_INITDB_ROOT_PASSWORD not set");
-    let connection_string = format!("mongodb://{}:{}@localhost:27017", username, password);
-    let client_options = ClientOptions::parse(connection_string).await.expect("Failed to create ClientOptions.");
-    let client = Client::with_options(client_options).expect("Failed to create Client.");
-    println!("Pinging MongoDB...");
-    let db_names = client.list_database_names().await.expect("Failed to list databases.");
-    println!("Successfully connected! Found {} databases.", db_names.len());
+async fn mongodb_should_store_the_event() {
+    dotenv().ok();
+    let user_created_event = generate_user_created_event();
+    let event_store = MongodbEventStore::new().await;
+    let stream_key = StreamKey::new("users", user_created_event.aggregate_id);
+    let result = event_store.append(stream_key, user_created_event).await;
+    assert!(result.is_ok());
+}
+
+#[rstest]
+#[tokio::test]
+#[ignore]
+async fn mongodb_should_load_the_events_of_the_stream(
+) {
+    dotenv().ok();
+    let user_created_event = generate_user_created_event();
+    let user_updated_event = DomainEvent::create(
+        "user_updated",
+        user_created_event.aggregate_id.clone(),
+        user_created_event.payload.clone(),
+    );
+    let event_store = MongodbEventStore::new().await;
+    let stream_key = StreamKey::new("users", user_created_event.aggregate_id);
+    event_store
+        .append(stream_key.clone(), user_created_event)
+        .await
+        .expect("Failed to append event.");
+
+    let iterations = 1_000;
+    join_all(
+        (0..iterations)
+        .map(|_| event_store.append(stream_key.clone(), user_updated_event.clone()))
+        .collect::<Vec<_>>()
+    ).await;
+
+    let result: Result<Vec<DomainEvent<User>>, _> = event_store.load(stream_key).await;
+    assert!(result.is_ok());
+    let events = result.expect("Failed to load events");
+    assert_eq!(events.len(), iterations + 1);
 }

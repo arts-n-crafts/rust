@@ -1,7 +1,7 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Serialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize,  Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StreamKey(String);
 
 impl StreamKey {

@@ -1,21 +1,22 @@
+name: arts-n-crafts_rs
 services:
-  mongodb:
+  mongodb_rs:
     image: mongo:latest
-    container_name: mongodb
-    hostname: mongodb
+    container_name: mongodb_rs
+    hostname: mongodb_rs
     restart: no
     volumes:
-      - mongodb-data:/data/db/
-      - mongodb-log:/var/log/mongodb/
+      - mongodb_rs-data:/data/db/
+      - mongodb_rs-log:/var/log/mongodb/
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
     ports:
       - "27017:27017"
 
-  mongo-express:
+  mongo-express_rs:
     image: mongo-express:latest
-    container_name: mongo-express
+    container_name: mongo-express_rs
     restart: no
     environment:
       ME_CONFIG_BASICAUTH: false
@@ -23,18 +24,18 @@ services:
       ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
       ME_CONFIG_MONGODB_PORT: 27017
-      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_SERVER: mongodb_rs
     ports:
       - 8081:8081
     depends_on:
-      - mongodb
+      - mongodb_rs
     deploy:
       replicas: ${MONGO_EXPRESS_REPLICAS:-1}
 
 volumes:
-  mongodb-data:
+  mongodb_rs-data:
     driver: local
-    name: mongo-data
-  mongodb-log:
+    name: mongo-data_rs
+  mongodb_rs-log:
     driver: local
-    name: mongo-log
+    name: mongo-log_rs
