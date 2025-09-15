@@ -110,6 +110,7 @@ mod stored_event_test {
 
 #[cfg(test)]
 mod in_memory_event_store_tests {
+    use futures::future::join_all;
     use super::*;
     use crate::domain::domain_event::DomainEvent;
     use rstest::{fixture, rstest};
@@ -162,6 +163,23 @@ mod in_memory_event_store_tests {
 
         let result = event_store.load(stream_key).await;
         assert!(result.is_ok());
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn should_query_all_the_data_in_the_stream(user_created_event: DomainEvent<TestPayload>) {
+        let event_store = InMemoryEventStore::new();
+        let stream_key = StreamKey::new("users", user_created_event.aggregate_id);
+        let iterations = 1_000;
+        join_all(
+            (0..iterations)
+                .map(|_| event_store.append(stream_key.clone(), user_created_event.clone()))
+                .collect::<Vec<_>>()
+        ).await;
+        let result = event_store.load(stream_key).await;
+        assert!(result.is_ok());
+        let events = result.expect("Failed to load events");
+        assert_eq!(events.len(), iterations);
     }
 
     #[rstest]
