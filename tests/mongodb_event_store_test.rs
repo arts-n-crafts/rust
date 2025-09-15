@@ -51,12 +51,7 @@ pub struct MongodbEventStore {
 }
 
 impl MongodbEventStore {
-    pub async fn new() -> Self {
-        let username = std::env::var("MONGO_INITDB_ROOT_USERNAME")
-            .expect("MONGO_INITDB_ROOT_USERNAME not set");
-        let password = std::env::var("MONGO_INITDB_ROOT_PASSWORD")
-            .expect("MONGO_INITDB_ROOT_PASSWORD not set");
-        let connection_string = format!("mongodb://{}:{}@localhost:27017", username, password);
+    pub async fn new(connection_string: String) -> Self {
         let client_options = ClientOptions::parse(connection_string)
             .await
             .expect("Failed to create ClientOptions.");
@@ -64,6 +59,15 @@ impl MongodbEventStore {
         let db: Database = client.database("test");
         let collection: Collection<Document> = db.collection("event_store");
         MongodbEventStore { collection }
+    }
+
+    pub fn make_connection_string_from_env() -> String {
+        dotenv().ok();
+        let username = std::env::var("MONGO_INITDB_ROOT_USERNAME")
+            .expect("MONGO_INITDB_ROOT_USERNAME not set");
+        let password = std::env::var("MONGO_INITDB_ROOT_PASSWORD")
+            .expect("MONGO_INITDB_ROOT_PASSWORD not set");
+        format!("mongodb://{}:{}@localhost:27017", username, password)
     }
 }
 
@@ -117,9 +121,9 @@ where
 #[tokio::test]
 #[ignore]
 async fn mongodb_should_store_the_event() {
-    dotenv().ok();
+    let connection_string = MongodbEventStore::make_connection_string_from_env();
+    let event_store = MongodbEventStore::new(connection_string).await;
     let user_created_event = generate_user_created_event();
-    let event_store = MongodbEventStore::new().await;
     let stream_key = StreamKey::new("users", user_created_event.aggregate_id);
     let result = event_store.append(stream_key, user_created_event).await;
     assert!(result.is_ok());
@@ -130,14 +134,14 @@ async fn mongodb_should_store_the_event() {
 #[ignore]
 async fn mongodb_should_load_the_events_of_the_stream(
 ) {
-    dotenv().ok();
     let user_created_event = generate_user_created_event();
     let user_updated_event = DomainEvent::create(
         "user_updated",
         user_created_event.aggregate_id.clone(),
         user_created_event.payload.clone(),
     );
-    let event_store = MongodbEventStore::new().await;
+    let connection_string = MongodbEventStore::make_connection_string_from_env();
+    let event_store = MongodbEventStore::new(connection_string).await;
     let stream_key = StreamKey::new("users", user_created_event.aggregate_id);
     event_store
         .append(stream_key.clone(), user_created_event)
