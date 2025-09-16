@@ -47,10 +47,7 @@ mod decider_tests {
 
     impl Decider<User, UserCommand, UserEventPayload> for UserDecider {
         fn initial_state() -> User {
-            User::new(
-                String::from(""),
-                String::from(""),
-            )
+            User::new(String::from(""), String::from(""))
         }
         fn evolve(mut current_state: User, event: DomainEvent<UserEventPayload>) -> User {
             match event.payload {
@@ -84,15 +81,19 @@ mod decider_tests {
     #[rstest]
     fn it_should_evolve_to_the_current_created_state() {
         let aggregate_id = Uuid::now_v7();
-        let past_events = vec![
-            DomainEvent::create("user_created", aggregate_id, UserEventPayload::UserCreated {
-            id: aggregate_id.to_string(),
-            name: "John Doe".to_string(),
-        })];
-        let state = past_events.into_iter().fold(
-            UserDecider::initial_state(),
-            |state, event| UserDecider::evolve(state, event),
-        );
+        let past_events = vec![DomainEvent::create(
+            "user_created",
+            aggregate_id,
+            UserEventPayload::UserCreated {
+                id: aggregate_id.to_string(),
+                name: "John Doe".to_string(),
+            },
+        )];
+        let state = past_events
+            .into_iter()
+            .fold(UserDecider::initial_state(), |state, event| {
+                UserDecider::evolve(state, event)
+            });
         assert_eq!(state.id, aggregate_id.to_string());
         assert_eq!(state.name, String::from("John Doe"));
         assert_eq!(state.likes, 0);
@@ -101,27 +102,24 @@ mod decider_tests {
     #[rstest]
     fn it_should_evolve_to_the_current_state_with_likes() {
         let aggregate_id = Uuid::now_v7();
-        let mut past_events = vec![
-            DomainEvent::create(
-                "user_created",
-                aggregate_id,
-                UserEventPayload::UserCreated {
-                    id: aggregate_id.to_string(),
-                    name: "John Doe".to_string(),
-                },
-            ),
-        ];
-        past_events.extend((0..10).map(|_| {
-            DomainEvent::create(
-                "user_liked",
-                aggregate_id,
-                UserEventPayload::UserLiked,
-            )
-        }));
-        let state = past_events.into_iter().fold(
-            UserDecider::initial_state(),
-            |state, event| UserDecider::evolve(state, event),
+        let mut past_events = vec![DomainEvent::create(
+            "user_created",
+            aggregate_id,
+            UserEventPayload::UserCreated {
+                id: aggregate_id.to_string(),
+                name: "John Doe".to_string(),
+            },
+        )];
+        past_events.extend(
+            (0..10).map(|_| {
+                DomainEvent::create("user_liked", aggregate_id, UserEventPayload::UserLiked)
+            }),
         );
+        let state = past_events
+            .into_iter()
+            .fold(UserDecider::initial_state(), |state, event| {
+                UserDecider::evolve(state, event)
+            });
         assert_eq!(state.id, aggregate_id.to_string());
         assert_eq!(state.name, String::from("John Doe"));
         assert_eq!(state.likes, 10);
