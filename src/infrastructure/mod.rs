@@ -10,5 +10,3 @@ pub mod database {
 }
 
 mod outbox;
-mod command_bus;
-mod query_bus;
