@@ -32,10 +32,10 @@ impl DatabaseQuery<User, DatabaseError> for GetUsersNamedJohn {
 #[fixture]
 fn users() -> Vec<User> {
     vec![
-        User::new(0,"John".to_string()),
-        User::new(1,"Jane".to_string()),
-        User::new(2,"Joe".to_string()),
-        User::new(3,"John".to_string())
+        User::new(0.to_string(),"John".to_string()),
+        User::new(1.to_string(),"Jane".to_string()),
+        User::new(2.to_string(),"Joe".to_string()),
+        User::new(3.to_string(),"John".to_string())
     ]
 }
 
@@ -65,8 +65,8 @@ async fn should_retrieve_all_users_named_john(users: Vec<User>) {
     assert!(result.is_ok());
     let unwrapped_users = result.unwrap();
     assert_eq!(unwrapped_users.len(), 2);
-    assert_eq!(unwrapped_users[0].id, 0);
-    assert_eq!(unwrapped_users[1].id, 3);
+    assert_eq!(unwrapped_users[0].id, 0.to_string());
+    assert_eq!(unwrapped_users[1].id, 3.to_string());
 }
 
 #[rstest]

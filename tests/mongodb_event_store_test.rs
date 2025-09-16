@@ -24,7 +24,7 @@ pub struct MongoStoredEvent<TEvent>
 where
     TEvent: Serialize + Send + Sync + Clone,
 {
-    pub _id: Uuid,
+    pub _id: String,
     stream_key: StreamKey,
     version: u8,
     pub event: TEvent,
@@ -37,7 +37,7 @@ where
 {
     pub fn new(stream_key: StreamKey, version: u8, event: TEvent) -> Self {
         MongoStoredEvent {
-            _id: Uuid::now_v7(),
+            _id: Uuid::now_v7().to_string(),
             stream_key,
             version,
             event,
@@ -124,7 +124,7 @@ async fn mongodb_should_store_the_event() {
     let connection_string = MongodbEventStore::make_connection_string_from_env();
     let event_store = MongodbEventStore::new(connection_string).await;
     let user_created_event = generate_user_created_event();
-    let stream_key = StreamKey::new("users", user_created_event.aggregate_id);
+    let stream_key = StreamKey::new("users", user_created_event.aggregate_id.clone());
     let result = event_store.append(stream_key, user_created_event).await;
     assert!(result.is_ok());
 }
@@ -142,7 +142,7 @@ async fn mongodb_should_load_the_events_of_the_stream(
     );
     let connection_string = MongodbEventStore::make_connection_string_from_env();
     let event_store = MongodbEventStore::new(connection_string).await;
-    let stream_key = StreamKey::new("users", user_created_event.aggregate_id);
+    let stream_key = StreamKey::new("users", user_created_event.aggregate_id.clone());
     event_store
         .append(stream_key.clone(), user_created_event)
         .await

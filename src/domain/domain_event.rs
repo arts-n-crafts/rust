@@ -19,9 +19,9 @@ pub struct DomainEvent<TPayload>
 where
     TPayload: EventPayload,
 {
-    id: Uuid,
+    id: String,
     r#type: String,
-    pub aggregate_id: Uuid,
+    pub aggregate_id: String,
     source: EventSource,
     pub payload: TPayload,
     timestamp: i64,
@@ -32,11 +32,11 @@ impl<TPayload> DomainEvent<TPayload>
 where
     TPayload: EventPayload,
 {
-    pub fn create(name: &str, aggregate_id: Uuid, payload: TPayload) -> Self {
+    pub fn create(name: &str, aggregate_id: String, payload: TPayload) -> Self {
         DomainEvent {
-            id: Uuid::now_v7(),
+            id: Uuid::now_v7().to_string(),
             r#type: name.to_string(),
-            aggregate_id,
+            aggregate_id: aggregate_id.to_string(),
             source: EventSource::Internal,
             payload,
             timestamp: Utc::now().timestamp_millis(),
@@ -86,9 +86,9 @@ mod create_domain_event_tests {
     #[rstest]
     fn it_should_create_a_domain_event(fixture: (&'static str, Uuid, User)) {
         let (event_name, aggregate_id, payload) = fixture;
-        let event = DomainEvent::create(event_name, aggregate_id.clone(), payload.clone());
+        let event = DomainEvent::create(event_name, aggregate_id.to_string(), payload.clone());
         assert_eq!(event.r#type, event_name);
-        assert_eq!(event.aggregate_id, aggregate_id);
+        assert_eq!(event.aggregate_id, aggregate_id.to_string());
         assert_eq!(event.source, EventSource::Internal);
         assert_eq!(event.payload, payload);
         assert_eq!(event.metadata, HashMap::new());
@@ -97,7 +97,7 @@ mod create_domain_event_tests {
     #[rstest]
     fn it_should_add_metadata_causation_id_and_correlation_id(fixture: (&'static str, Uuid, User)) {
         let (event_name, aggregate_id, payload) = fixture;
-        let mut event = DomainEvent::create(event_name, aggregate_id.clone(), payload.clone());
+        let mut event = DomainEvent::create(event_name, aggregate_id.to_string(), payload.clone());
         let causation_id = Uuid::now_v7();
         let correlation_id = Uuid::now_v7();
         event.set_causation_id(causation_id.clone().to_string());

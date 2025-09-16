@@ -1,11 +1,10 @@
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 #[derive(Serialize, Deserialize,  Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StreamKey(String);
 
 impl StreamKey {
-    pub fn new(stream_name: &str, aggregate_id: Uuid) -> Self {
+    pub fn new(stream_name: &str, aggregate_id: String) -> Self {
         let key = format!("{}#{}", stream_name.to_lowercase(), aggregate_id);
         Self(key)
     }
@@ -19,12 +18,13 @@ impl StreamKey {
 mod stream_key_test {
     use super::*;
     use rstest::rstest;
+    use uuid::Uuid;
 
     #[rstest]
     fn it_should_return_a_stream_key(){
         let stream_name = "users";
         let aggregate_id = Uuid::now_v7();
-        let stream_key = StreamKey::new(stream_name, aggregate_id);
+        let stream_key = StreamKey::new(stream_name, aggregate_id.to_string());
         assert_eq!(stream_key.as_str(), format!("users#{}", aggregate_id));
     }
 }

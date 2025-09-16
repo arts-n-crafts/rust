@@ -98,9 +98,9 @@ mod stored_event_test {
     #[rstest]
     fn it_should_create_a_stored_event() {
         let aggregate_id = Uuid::now_v7();
-        let stream_key = StreamKey::new("users", aggregate_id);
+        let stream_key = StreamKey::new("users", aggregate_id.to_string());
         let payload = TestPayload { id: Uuid::now_v7() };
-        let event = DomainEvent::create("UserCreated", aggregate_id, payload);
+        let event = DomainEvent::create("UserCreated", aggregate_id.to_string(), payload);
         let stored_event = StoredEvent::new(stream_key.clone(), 1, event.clone());
         assert_eq!(stored_event.stream_key, stream_key);
         assert_eq!(stored_event.version, 1);
@@ -119,21 +119,21 @@ mod in_memory_event_store_tests {
 
     #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
     struct TestPayload {
-        id: Uuid,
+        id: String,
     }
 
     #[fixture]
     fn user_created_event() -> DomainEvent<TestPayload> {
         let aggregate_id = Uuid::now_v7();
-        let payload = TestPayload { id: Uuid::now_v7() };
-        DomainEvent::create("UserCreated", aggregate_id, payload)
+        let payload = TestPayload { id: Uuid::now_v7().to_string() };
+        DomainEvent::create("UserCreated", aggregate_id.to_string(), payload)
     }
 
     #[rstest]
     #[tokio::test]
     async fn should_store_the_data(user_created_event: DomainEvent<TestPayload>) {
         let event_store = InMemoryEventStore::new();
-        let stream_key = StreamKey::new("users", user_created_event.aggregate_id);
+        let stream_key = StreamKey::new("users", user_created_event.aggregate_id.clone());
         let result = event_store.append(stream_key, user_created_event).await;
         assert!(result.is_ok());
     }
@@ -145,7 +145,7 @@ mod in_memory_event_store_tests {
     ) {
         let mut event_store = InMemoryEventStore::new();
         event_store.go_offline();
-        let stream_key = StreamKey::new("users", user_created_event.aggregate_id);
+        let stream_key = StreamKey::new("users", user_created_event.aggregate_id.clone());
         let result = event_store.append(stream_key, user_created_event).await;
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), EventStoreError::AppendError);
@@ -155,7 +155,7 @@ mod in_memory_event_store_tests {
     #[tokio::test]
     async fn should_query_the_data(user_created_event: DomainEvent<TestPayload>) {
         let event_store = InMemoryEventStore::new();
-        let stream_key = StreamKey::new("users", user_created_event.aggregate_id);
+        let stream_key = StreamKey::new("users", user_created_event.aggregate_id.clone());
         event_store
             .append(stream_key.clone(), user_created_event)
             .await
@@ -169,7 +169,7 @@ mod in_memory_event_store_tests {
     #[tokio::test]
     async fn should_query_all_the_data_in_the_stream(user_created_event: DomainEvent<TestPayload>) {
         let event_store = InMemoryEventStore::new();
-        let stream_key = StreamKey::new("users", user_created_event.aggregate_id);
+        let stream_key = StreamKey::new("users", user_created_event.aggregate_id.clone());
         let iterations = 100;
         join_all(
             (0..iterations)
@@ -187,7 +187,7 @@ mod in_memory_event_store_tests {
     async fn should_fail_querying_if_database_is_offline() {
         let mut event_store = InMemoryEventStore::<StoredEvent<DomainEvent<TestPayload>>>::new();
         event_store.go_offline();
-        let stream_key = StreamKey::new("users", Uuid::now_v7());
+        let stream_key = StreamKey::new("users", Uuid::now_v7().to_string());
         let result = event_store.load(stream_key).await;
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), EventStoreError::LoadError);

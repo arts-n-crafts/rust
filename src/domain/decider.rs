@@ -60,7 +60,6 @@ mod decider_tests {
                     current_state.likes += 1;
                     current_state
                 }
-                _ => current_state,
             }
         }
         fn decide(current_state: User, command: UserCommand) -> DomainEvent<UserEventPayload> {
@@ -102,7 +101,7 @@ mod decider_tests {
         let aggregate_id = Uuid::now_v7();
         let past_events = vec![DomainEvent::create(
             "user_created",
-            aggregate_id,
+            aggregate_id.to_string(),
             UserEventPayload::UserCreated {
                 id: aggregate_id.to_string(),
                 name: "John Doe".to_string(),
@@ -123,7 +122,7 @@ mod decider_tests {
         let aggregate_id = Uuid::now_v7();
         let mut past_events = vec![DomainEvent::create(
             "user_created",
-            aggregate_id,
+            aggregate_id.to_string(),
             UserEventPayload::UserCreated {
                 id: aggregate_id.to_string(),
                 name: "John Doe".to_string(),
@@ -131,7 +130,7 @@ mod decider_tests {
         )];
         past_events.extend(
             (0..10).map(|_| {
-                DomainEvent::create("user_liked", aggregate_id, UserEventPayload::UserLiked)
+                DomainEvent::create("user_liked", aggregate_id.to_string(), UserEventPayload::UserLiked)
             }),
         );
         let state = past_events
@@ -184,7 +183,7 @@ mod decider_tests {
         let past_events = vec![
             DomainEvent::create(
                 "user_created",
-                aggregate_id,
+                aggregate_id.to_string(),
                 UserEventPayload::UserCreated {
                     id: aggregate_id.to_string(),
                     name: "John Doe".to_string(),
