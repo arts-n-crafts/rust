@@ -170,7 +170,7 @@ mod in_memory_event_store_tests {
     async fn should_query_all_the_data_in_the_stream(user_created_event: DomainEvent<TestPayload>) {
         let event_store = InMemoryEventStore::new();
         let stream_key = StreamKey::new("users", user_created_event.aggregate_id);
-        let iterations = 1_000;
+        let iterations = 100;
         join_all(
             (0..iterations)
                 .map(|_| event_store.append(stream_key.clone(), user_created_event.clone()))

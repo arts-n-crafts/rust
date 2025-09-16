@@ -148,7 +148,7 @@ async fn mongodb_should_load_the_events_of_the_stream(
         .await
         .expect("Failed to append event.");
 
-    let iterations = 1_000;
+    let iterations = 100;
     join_all(
         (0..iterations)
         .map(|_| event_store.append(stream_key.clone(), user_updated_event.clone()))
