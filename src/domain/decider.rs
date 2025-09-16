@@ -9,7 +9,7 @@ where
 {
     fn initial_state() -> TState;
     fn evolve(current_state: TState, event: DomainEvent<TEventPayload>) -> TState;
-    fn decide(current_state: TState, command: TCommand) -> Vec<TEventPayload>;
+    fn decide(current_state: TState, command: TCommand) -> DomainEvent<TEventPayload>;
 }
 
 #[cfg(test)]
@@ -60,13 +60,23 @@ mod decider_tests {
                     current_state.likes += 1;
                     current_state
                 }
-                _ => {
-                    current_state
-                }
+                _ => current_state,
             }
         }
-        fn decide(_current_state: User, _command: UserCommand) -> Vec<UserEventPayload> {
-            todo!()
+        fn decide(current_state: User, command: UserCommand) -> DomainEvent<UserEventPayload> {
+            match command {
+                UserCommand::CreateUser { id, name } => {
+                    if current_state != UserDecider::initial_state() {
+                        panic!("Expected current state to be initial state.");
+                    }
+                    DomainEvent::create(
+                        "user_created",
+                        id.parse().unwrap(),
+                        UserEventPayload::UserCreated { id, name },
+                    )
+                }
+                UserCommand::LikeUser => todo!(),
+            }
         }
     }
 
@@ -123,5 +133,39 @@ mod decider_tests {
         assert_eq!(state.id, aggregate_id.to_string());
         assert_eq!(state.name, String::from("John Doe"));
         assert_eq!(state.likes, 10);
+    }
+
+    #[rstest]
+    fn it_should_decide_to_emit_an_user_created_event_based_on_create_user_command() {
+        let aggregate_id = Uuid::now_v7();
+        let past_events = vec![];
+        let current_state = past_events
+            .into_iter()
+            .fold(UserDecider::initial_state(), |state, event| {
+                UserDecider::evolve(state, event)
+            });
+        let event = UserDecider::decide(
+            current_state.clone(),
+            UserCommand::CreateUser {
+                id: aggregate_id.to_string(),
+                name: "John Doe".to_string(),
+            },
+        );
+        let next_state = vec![event.clone()]
+            .into_iter()
+            .fold(current_state, |state, event| {
+                UserDecider::evolve(state, event)
+            });
+        assert_eq!(event.aggregate_id.to_string(), aggregate_id.to_string());
+        assert_eq!(
+            event.payload,
+            UserEventPayload::UserCreated {
+                id: aggregate_id.to_string(),
+                name: "John Doe".to_string()
+            }
+        );
+        assert_eq!(next_state.id, aggregate_id.to_string());
+        assert_eq!(next_state.name, String::from("John Doe"));
+        assert_eq!(next_state.likes, 0);
     }
 }
