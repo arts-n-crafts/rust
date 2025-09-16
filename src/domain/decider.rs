@@ -75,7 +75,16 @@ mod decider_tests {
                         UserEventPayload::UserCreated { id, name },
                     )
                 }
-                UserCommand::LikeUser => todo!(),
+                UserCommand::LikeUser => {
+                    if current_state == UserDecider::initial_state() {
+                        panic!("Expected current state to be an evolved state, not initial state.");
+                    }
+                    DomainEvent::create(
+                        "user_liked",
+                        current_state.id.parse().unwrap(),
+                        UserEventPayload::UserLiked,
+                    )
+                },
             }
         }
     }
@@ -167,5 +176,39 @@ mod decider_tests {
         assert_eq!(next_state.id, aggregate_id.to_string());
         assert_eq!(next_state.name, String::from("John Doe"));
         assert_eq!(next_state.likes, 0);
+    }
+
+    #[rstest]
+    fn it_should_decide_to_emit_an_user_liked_event_based_on_like_user_command() {
+        let aggregate_id = Uuid::now_v7();
+        let past_events = vec![
+            DomainEvent::create(
+                "user_created",
+                aggregate_id,
+                UserEventPayload::UserCreated {
+                    id: aggregate_id.to_string(),
+                    name: "John Doe".to_string(),
+                },
+            )
+        ];
+        let current_state = past_events
+            .into_iter()
+            .fold(UserDecider::initial_state(), |state, event| {
+                UserDecider::evolve(state, event)
+            });
+        let event = UserDecider::decide(
+            current_state.clone(),
+            UserCommand::LikeUser,
+        );
+        let next_state = vec![event.clone()]
+            .into_iter()
+            .fold(current_state, |state, event| {
+                UserDecider::evolve(state, event)
+            });
+        assert_eq!(event.aggregate_id.to_string(), aggregate_id.to_string());
+        assert_eq!(event.payload, UserEventPayload::UserLiked);
+        assert_eq!(next_state.id, aggregate_id.to_string());
+        assert_eq!(next_state.name, String::from("John Doe"));
+        assert_eq!(next_state.likes, 1);
     }
 }
