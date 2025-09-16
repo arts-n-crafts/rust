@@ -1,16 +1,10 @@
 use chrono::Utc;
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
 
-pub trait HasEventType {
-    fn event_type(&self) -> &'static str;
-}
-
-pub trait EventPayload: Serialize + DeserializeOwned + Send + Sync + Clone + HasEventType {}
-impl<T> EventPayload for T where T: Serialize + DeserializeOwned + Send + Sync + Clone + HasEventType {}
-
+pub trait EventPayload: Serialize + Send + Sync + Clone {}
+impl<T> EventPayload for T where T: Serialize + Send + Sync + Clone {}
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum EventSource {
@@ -19,31 +13,30 @@ pub enum EventSource {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-#[serde(bound(deserialize = "TPayload: DeserializeOwned"))]
 pub struct DomainEvent<TPayload>
 where
     TPayload: EventPayload,
 {
     id: String,
-    r#type: String,
     pub aggregate_id: String,
     source: EventSource,
     pub payload: TPayload,
+    r#type: String,
     timestamp: i64,
     metadata: HashMap<String, String>,
 }
 
 impl<TPayload> DomainEvent<TPayload>
 where
-    TPayload: EventPayload,
+    TPayload: EventPayload + AsRef<str>,
 {
     pub fn create(aggregate_id: String, payload: TPayload) -> Self {
         DomainEvent {
             id: Uuid::now_v7().to_string(),
-            r#type: payload.event_type().to_string(),
             aggregate_id: aggregate_id.to_string(),
             source: EventSource::Internal,
-            payload,
+            payload: payload.clone(),
+            r#type: payload.as_ref().to_string(),
             timestamp: Utc::now().timestamp_millis(),
             metadata: HashMap::new(),
         }
@@ -69,6 +62,7 @@ mod create_domain_event_tests {
     use super::*;
     use rstest::{fixture, rstest};
     use serde::{Deserialize, Serialize};
+    use strum_macros::AsRefStr;
     use uuid::Uuid;
 
     #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
@@ -78,19 +72,10 @@ mod create_domain_event_tests {
         pub likes: u8,
     }
 
-    #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+    #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, AsRefStr)]
     pub enum UserEventPayload {
         UserCreated { id: String, name: String },
         UserLiked,
-    }
-
-    impl HasEventType for UserEventPayload {
-        fn event_type(&self) -> &'static str {
-            match self {
-                UserEventPayload::UserCreated { id: _, name: _ } => "user_created",
-                UserEventPayload::UserLiked => "user_liked",
-            }
-        }
     }
 
     #[fixture]
@@ -107,7 +92,7 @@ mod create_domain_event_tests {
     fn it_should_create_a_domain_event(fixture: (String, UserEventPayload)) {
         let (aggregate_id, payload) = fixture;
         let event = DomainEvent::create(aggregate_id.to_string(), payload.clone());
-        assert_eq!(event.r#type, payload.event_type().to_string());
+        assert_eq!(event.payload.as_ref(), payload.as_ref());
         assert_eq!(event.aggregate_id, aggregate_id.to_string());
         assert_eq!(event.source, EventSource::Internal);
         assert_eq!(event.payload, payload);

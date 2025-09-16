@@ -1,5 +1,5 @@
 use crate::domain::domain_event::{DomainEvent, EventPayload};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Serialize};
 
 pub trait Decider<TState, TCommand, TEventPayload>
 where
@@ -17,7 +17,8 @@ mod decider_tests {
     use super::*;
     use rstest::rstest;
     use uuid::Uuid;
-    use crate::domain::domain_event::HasEventType;
+    use serde::{Deserialize, Serialize};
+    use strum_macros::AsRefStr;
 
     #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
     pub struct User {
@@ -38,19 +39,10 @@ mod decider_tests {
         LikeUser,
     }
 
-    #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+    #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, AsRefStr)]
     pub enum UserEventPayload {
         UserCreated { id: String, name: String },
         UserLiked,
-    }
-
-    impl HasEventType for UserEventPayload {
-        fn event_type(&self) -> &'static str {
-            match self {
-                UserEventPayload::UserCreated { id: _, name: _ } => "user_created",
-                UserEventPayload::UserLiked => "user_liked",
-            }
-        }
     }
 
     struct UserDecider;

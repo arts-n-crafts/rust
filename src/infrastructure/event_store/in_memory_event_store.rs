@@ -1,26 +1,30 @@
 use crate::infrastructure::event_store::event_store::{EventStore, EventStoreError};
 use crate::infrastructure::event_store::stream_key::StreamKey;
 use chrono::Utc;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
+use crate::domain::domain_event::{DomainEvent, EventPayload};
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct StoredEvent<TEvent>
+#[derive(Serialize, Debug, PartialEq, Clone)]
+pub struct StoredEvent<TEventPayload>
 where
-    TEvent: Serialize + Send + Sync + Clone,
+    TEventPayload: EventPayload,
 {
     pub id: Uuid,
     stream_key: StreamKey,
     version: u8,
-    pub event: TEvent,
+    pub event: DomainEvent<TEventPayload>,
     timestamp: i64,
 }
 
-impl<TEvent: Serialize + DeserializeOwned + Send + Sync + Clone> StoredEvent<TEvent> {
-    pub fn new(stream_key: StreamKey, version: u8, event: TEvent) -> Self {
+impl<TEventPayload> StoredEvent<TEventPayload>
+where
+    TEventPayload: EventPayload,
+{
+    pub fn new(stream_key: StreamKey, version: u8, event: DomainEvent<TEventPayload>) -> Self {
         StoredEvent {
             id: Uuid::now_v7(),
             stream_key,
@@ -30,17 +34,17 @@ impl<TEvent: Serialize + DeserializeOwned + Send + Sync + Clone> StoredEvent<TEv
         }
     }
 }
-pub struct InMemoryEventStore<TEvent>
+pub struct InMemoryEventStore<TEventPayload>
 where
-    TEvent: Serialize + Send + Sync + Clone,
+    TEventPayload: EventPayload,
 {
-    data: Arc<Mutex<HashMap<StreamKey, Vec<StoredEvent<TEvent>>>>>,
+    data: Arc<Mutex<HashMap<StreamKey, Vec<StoredEvent<TEventPayload>>>>>,
     is_offline: bool,
 }
 
-impl<TEvent> InMemoryEventStore<TEvent>
+impl<TEventPayload> InMemoryEventStore<TEventPayload>
 where
-    TEvent: Serialize + Send + Sync + Clone,
+    TEventPayload: EventPayload,
 {
     pub fn new() -> Self {
         InMemoryEventStore {
@@ -54,11 +58,11 @@ where
     }
 }
 
-impl<TEvent> EventStore<TEvent> for InMemoryEventStore<TEvent>
+impl<TEventPayload> EventStore<TEventPayload> for InMemoryEventStore<TEventPayload>
 where
-    TEvent: Serialize + DeserializeOwned + Send + Sync + Clone + 'static,
+    TEventPayload: EventPayload,
 {
-    async fn append(&self, stream_key: StreamKey, event: TEvent) -> Result<(), EventStoreError> {
+    async fn append(&self, stream_key: StreamKey, event: DomainEvent<TEventPayload>) -> Result<(), EventStoreError> {
         if self.is_offline {
             return Err(EventStoreError::AppendError);
         }
@@ -70,7 +74,7 @@ where
         Ok(())
     }
 
-    async fn load(&self, stream_key: StreamKey) -> Result<Vec<TEvent>, EventStoreError> {
+    async fn load(&self, stream_key: StreamKey) -> Result<Vec<DomainEvent<TEventPayload>>, EventStoreError> {
         if self.is_offline {
             return Err(EventStoreError::LoadError);
         }
@@ -90,7 +94,7 @@ mod stored_event_test {
     use crate::domain::domain_event::DomainEvent;
     use rstest::rstest;
     use crate::infrastructure::event_store::in_memory_event_store::in_memory_event_store_tests::UserEventPayload;
-    
+
     #[rstest]
     fn it_should_create_a_stored_event() {
         let aggregate_id = Uuid::now_v7();
@@ -108,24 +112,16 @@ mod stored_event_test {
 mod in_memory_event_store_tests {
     use futures::future::join_all;
     use super::*;
-    use crate::domain::domain_event::{DomainEvent, HasEventType};
+    use crate::domain::domain_event::{DomainEvent};
     use rstest::{fixture, rstest};
     use serde::Deserialize;
+    use strum_macros::AsRefStr;
     use uuid::Uuid;
 
-    #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+    #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, AsRefStr)]
     pub enum UserEventPayload {
         UserCreated { id: String, name: String },
         UserLiked,
-    }
-
-    impl HasEventType for UserEventPayload {
-        fn event_type(&self) -> &'static str {
-            match self {
-                UserEventPayload::UserCreated { id: _, name: _ } => "user_created",
-                UserEventPayload::UserLiked => "user_liked",
-            }
-        }
     }
 
     #[fixture]
@@ -191,7 +187,7 @@ mod in_memory_event_store_tests {
     #[rstest]
     #[tokio::test]
     async fn should_fail_querying_if_database_is_offline() {
-        let mut event_store = InMemoryEventStore::<StoredEvent<DomainEvent<UserEventPayload>>>::new();
+        let mut event_store: InMemoryEventStore<UserEventPayload> = InMemoryEventStore::new();
         event_store.go_offline();
         let stream_key = StreamKey::new("users", Uuid::now_v7().to_string());
         let result = event_store.load(stream_key).await;

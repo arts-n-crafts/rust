@@ -1,23 +1,15 @@
 #![allow(dead_code)]
 
 use serde::{Deserialize, Serialize};
+use strum_macros::AsRefStr;
 use uuid::Uuid;
-use arts_and_crafts_rs::domain::domain_event::{DomainEvent, HasEventType};
+use arts_and_crafts_rs::domain::domain_event::{DomainEvent};
 
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, AsRefStr)]
 pub enum UserEventPayload {
     UserCreated { id: String, name: String },
     UserLiked,
-}
-
-impl HasEventType for UserEventPayload {
-    fn event_type(&self) -> &'static str {
-        match self {
-            UserEventPayload::UserCreated { id: _, name: _ } => "user_created",
-            UserEventPayload::UserLiked => "user_liked",
-        }
-    }
 }
 
 pub fn generate_user_created_event() -> DomainEvent<UserEventPayload> {

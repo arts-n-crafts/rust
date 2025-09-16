@@ -1,5 +1,6 @@
 #[cfg(test)]
 use arts_and_crafts_rs::domain::domain_event::DomainEvent;
+use arts_and_crafts_rs::domain::domain_event::EventPayload;
 use arts_and_crafts_rs::infrastructure::event_store::event_store::{EventStore, EventStoreError};
 use arts_and_crafts_rs::infrastructure::event_store::stream_key::StreamKey;
 use chrono::Utc;
@@ -19,22 +20,26 @@ mod common;
 use common::user_created_event::{generate_user_created_event, UserEventPayload};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct MongoStoredEvent<TEvent>
+pub struct MongoStoredEvent<TEventPayload>
 where
-    TEvent: Serialize + Send + Sync + Clone,
+    TEventPayload: EventPayload,
 {
     pub _id: String,
     stream_key: StreamKey,
     version: u8,
-    pub event: TEvent,
+    pub event: DomainEvent<TEventPayload>,
     timestamp: i64,
 }
 
-impl<TEvent> MongoStoredEvent<TEvent>
+impl<TEventPayloadPayload> MongoStoredEvent<TEventPayloadPayload>
 where
-    TEvent: Serialize + Send + Sync + Clone,
+    TEventPayloadPayload: EventPayload,
 {
-    pub fn new(stream_key: StreamKey, version: u8, event: TEvent) -> Self {
+    pub fn new(
+        stream_key: StreamKey,
+        version: u8,
+        event: DomainEvent<TEventPayloadPayload>,
+    ) -> Self {
         MongoStoredEvent {
             _id: Uuid::now_v7().to_string(),
             stream_key,
@@ -70,11 +75,15 @@ impl MongodbEventStore {
     }
 }
 
-impl<TEvent> EventStore<TEvent> for MongodbEventStore
+impl<TEventPayload> EventStore<TEventPayload> for MongodbEventStore
 where
-    TEvent: Serialize + DeserializeOwned + Send + Sync + Clone,
+    TEventPayload: EventPayload + AsRef<str> + DeserializeOwned + Serialize,
 {
-    async fn append(&self, stream_key: StreamKey, event: TEvent) -> Result<(), EventStoreError> {
+    async fn append(
+        &self,
+        stream_key: StreamKey,
+        event: DomainEvent<TEventPayload>,
+    ) -> Result<(), EventStoreError> {
         let stored_event = MongoStoredEvent::new(stream_key, 1, event);
         let doc = to_document(&stored_event).map_err(|_| EventStoreError::AppendError)?;
 
@@ -87,7 +96,10 @@ where
         Ok(())
     }
 
-    async fn load(&self, stream_key: StreamKey) -> Result<Vec<TEvent>, EventStoreError> {
+    async fn load(
+        &self,
+        stream_key: StreamKey,
+    ) -> Result<Vec<DomainEvent<TEventPayload>>, EventStoreError> {
         let filter = doc! { "stream_key": &stream_key.as_str() };
         let find_options = FindOptions::builder().sort(doc! { "timestamp": 1 }).build();
 
@@ -98,21 +110,18 @@ where
             .await
             .map_err(|_| EventStoreError::LoadError)?;
 
-        let mut stored_events = Vec::new();
+        let mut events = Vec::new();
         while let Some(doc) = cursor
             .try_next()
             .await
             .map_err(|_| EventStoreError::LoadError)?
         {
-            let stored_event: MongoStoredEvent<TEvent> =
+            let stored_event: MongoStoredEvent<TEventPayload> =
                 from_document(doc).map_err(|_| EventStoreError::LoadError)?;
-            stored_events.push(stored_event);
+            events.push(stored_event.event);
         }
 
-        Ok(stored_events
-            .iter()
-            .map(|stored_event| stored_event.event.clone())
-            .collect())
+        Ok(events)
     }
 }
 
