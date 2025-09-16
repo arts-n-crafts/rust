@@ -10,14 +10,13 @@ use mongodb::bson::{doc, from_document, to_document, Document};
 use mongodb::options::FindOptions;
 use mongodb::{options::ClientOptions, Client};
 use mongodb::{Collection, Database};
-use rstest::{rstest};
+use rstest::rstest;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 mod common;
-use common::user_created_event::generate_user_created_event;
-use crate::common::user::User;
+use common::user_created_event::{generate_user_created_event, UserEventPayload};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct MongoStoredEvent<TEvent>
@@ -132,11 +131,9 @@ async fn mongodb_should_store_the_event() {
 #[rstest]
 #[tokio::test]
 #[ignore]
-async fn mongodb_should_load_the_events_of_the_stream(
-) {
+async fn mongodb_should_load_the_events_of_the_stream() {
     let user_created_event = generate_user_created_event();
     let user_updated_event = DomainEvent::create(
-        "user_updated",
         user_created_event.aggregate_id.clone(),
         user_created_event.payload.clone(),
     );
@@ -151,11 +148,12 @@ async fn mongodb_should_load_the_events_of_the_stream(
     let iterations = 100;
     join_all(
         (0..iterations)
-        .map(|_| event_store.append(stream_key.clone(), user_updated_event.clone()))
-        .collect::<Vec<_>>()
-    ).await;
+            .map(|_| event_store.append(stream_key.clone(), user_updated_event.clone()))
+            .collect::<Vec<_>>(),
+    )
+    .await;
 
-    let result: Result<Vec<DomainEvent<User>>, _> = event_store.load(stream_key).await;
+    let result: Result<Vec<DomainEvent<UserEventPayload>>, _> = event_store.load(stream_key).await;
     assert!(result.is_ok());
     let events = result.expect("Failed to load events");
     assert_eq!(events.len(), iterations + 1);

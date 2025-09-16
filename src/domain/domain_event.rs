@@ -4,8 +4,13 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
 
-pub trait EventPayload: Serialize + DeserializeOwned + Send + Sync + Clone {}
-impl<T> EventPayload for T where T: Serialize + DeserializeOwned + Send + Sync + Clone {}
+pub trait HasEventType {
+    fn event_type(&self) -> &'static str;
+}
+
+pub trait EventPayload: Serialize + DeserializeOwned + Send + Sync + Clone + HasEventType {}
+impl<T> EventPayload for T where T: Serialize + DeserializeOwned + Send + Sync + Clone + HasEventType {}
+
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum EventSource {
@@ -32,10 +37,10 @@ impl<TPayload> DomainEvent<TPayload>
 where
     TPayload: EventPayload,
 {
-    pub fn create(name: &str, aggregate_id: String, payload: TPayload) -> Self {
+    pub fn create(aggregate_id: String, payload: TPayload) -> Self {
         DomainEvent {
             id: Uuid::now_v7().to_string(),
-            r#type: name.to_string(),
+            r#type: payload.event_type().to_string(),
             aggregate_id: aggregate_id.to_string(),
             source: EventSource::Internal,
             payload,
@@ -67,27 +72,42 @@ mod create_domain_event_tests {
     use uuid::Uuid;
 
     #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
-    struct User {
-        id: u8,
-        name: String,
+    pub struct User {
+        pub id: String,
+        pub name: String,
+        pub likes: u8,
+    }
+
+    #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+    pub enum UserEventPayload {
+        UserCreated { id: String, name: String },
+        UserLiked,
+    }
+
+    impl HasEventType for UserEventPayload {
+        fn event_type(&self) -> &'static str {
+            match self {
+                UserEventPayload::UserCreated { id: _, name: _ } => "user_created",
+                UserEventPayload::UserLiked => "user_liked",
+            }
+        }
     }
 
     #[fixture]
-    fn fixture() -> (&'static str, Uuid, User) {
-        let event_name = "user_created";
+    fn fixture() -> (String, UserEventPayload) {
         let aggregate_id = Uuid::now_v7();
-        let payload: User = User {
-            id: 1,
+        let payload = UserEventPayload::UserCreated {
+            id: 1.to_string(),
             name: "John".to_string(),
         };
-        (event_name, aggregate_id.clone(), payload.clone())
+        (aggregate_id.to_string(), payload.clone())
     }
 
     #[rstest]
-    fn it_should_create_a_domain_event(fixture: (&'static str, Uuid, User)) {
-        let (event_name, aggregate_id, payload) = fixture;
-        let event = DomainEvent::create(event_name, aggregate_id.to_string(), payload.clone());
-        assert_eq!(event.r#type, event_name);
+    fn it_should_create_a_domain_event(fixture: (String, UserEventPayload)) {
+        let (aggregate_id, payload) = fixture;
+        let event = DomainEvent::create(aggregate_id.to_string(), payload.clone());
+        assert_eq!(event.r#type, payload.event_type().to_string());
         assert_eq!(event.aggregate_id, aggregate_id.to_string());
         assert_eq!(event.source, EventSource::Internal);
         assert_eq!(event.payload, payload);
@@ -95,9 +115,9 @@ mod create_domain_event_tests {
     }
 
     #[rstest]
-    fn it_should_add_metadata_causation_id_and_correlation_id(fixture: (&'static str, Uuid, User)) {
-        let (event_name, aggregate_id, payload) = fixture;
-        let mut event = DomainEvent::create(event_name, aggregate_id.to_string(), payload.clone());
+    fn it_should_add_metadata_causation_id_and_correlation_id(fixture: (String, UserEventPayload)) {
+        let (aggregate_id, payload) = fixture;
+        let mut event = DomainEvent::create(aggregate_id.to_string(), payload.clone());
         let causation_id = Uuid::now_v7();
         let correlation_id = Uuid::now_v7();
         event.set_causation_id(causation_id.clone().to_string());

@@ -17,6 +17,7 @@ mod decider_tests {
     use super::*;
     use rstest::rstest;
     use uuid::Uuid;
+    use crate::domain::domain_event::HasEventType;
 
     #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
     pub struct User {
@@ -41,6 +42,15 @@ mod decider_tests {
     pub enum UserEventPayload {
         UserCreated { id: String, name: String },
         UserLiked,
+    }
+
+    impl HasEventType for UserEventPayload {
+        fn event_type(&self) -> &'static str {
+            match self {
+                UserEventPayload::UserCreated { id: _, name: _ } => "user_created",
+                UserEventPayload::UserLiked => "user_liked",
+            }
+        }
     }
 
     struct UserDecider;
@@ -68,21 +78,13 @@ mod decider_tests {
                     if current_state != UserDecider::initial_state() {
                         panic!("Expected current state to be initial state.");
                     }
-                    DomainEvent::create(
-                        "user_created",
-                        id.parse().unwrap(),
-                        UserEventPayload::UserCreated { id, name },
-                    )
+                    DomainEvent::create(id.clone(), UserEventPayload::UserCreated { id, name })
                 }
                 UserCommand::LikeUser => {
                     if current_state == UserDecider::initial_state() {
                         panic!("Expected current state to be an evolved state, not initial state.");
                     }
-                    DomainEvent::create(
-                        "user_liked",
-                        current_state.id.parse().unwrap(),
-                        UserEventPayload::UserLiked,
-                    )
+                    DomainEvent::create(current_state.id, UserEventPayload::UserLiked)
                 },
             }
         }
@@ -100,7 +102,6 @@ mod decider_tests {
     fn it_should_evolve_to_the_current_created_state() {
         let aggregate_id = Uuid::now_v7();
         let past_events = vec![DomainEvent::create(
-            "user_created",
             aggregate_id.to_string(),
             UserEventPayload::UserCreated {
                 id: aggregate_id.to_string(),
@@ -121,7 +122,6 @@ mod decider_tests {
     fn it_should_evolve_to_the_current_state_with_likes() {
         let aggregate_id = Uuid::now_v7();
         let mut past_events = vec![DomainEvent::create(
-            "user_created",
             aggregate_id.to_string(),
             UserEventPayload::UserCreated {
                 id: aggregate_id.to_string(),
@@ -130,7 +130,7 @@ mod decider_tests {
         )];
         past_events.extend(
             (0..10).map(|_| {
-                DomainEvent::create("user_liked", aggregate_id.to_string(), UserEventPayload::UserLiked)
+                DomainEvent::create(aggregate_id.to_string(), UserEventPayload::UserLiked)
             }),
         );
         let state = past_events
@@ -182,7 +182,6 @@ mod decider_tests {
         let aggregate_id = Uuid::now_v7();
         let past_events = vec![
             DomainEvent::create(
-                "user_created",
                 aggregate_id.to_string(),
                 UserEventPayload::UserCreated {
                     id: aggregate_id.to_string(),
