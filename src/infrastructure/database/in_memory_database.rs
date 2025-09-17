@@ -8,13 +8,18 @@ pub enum DatabaseError {
     Unreachable,
 }
 
-
-pub struct InMemoryDatabase<T: Serialize + Send + Sync + Clone> {
+pub struct InMemoryDatabase<T>
+where
+    T: Serialize + Send + Sync + Clone,
+{
     data: Arc<Mutex<HashMap<String, Vec<T>>>>,
     is_offline: bool,
 }
 
-impl<T: Serialize + Send + Sync + Clone> InMemoryDatabase<T> {
+impl<T> InMemoryDatabase<T>
+where
+    T: Serialize + Send + Sync + Clone,
+{
     pub fn new() -> Self {
         InMemoryDatabase {
             data: Arc::new(Mutex::new(HashMap::new())),
@@ -44,8 +49,17 @@ impl<T: Serialize + Send + Sync + Clone> InMemoryDatabase<T> {
         }
 
         let data = self.data.lock().await;
-        let result = data.get(table_name).map(|v| v.clone()).unwrap_or_default();
+        let result = data.get(table_name).cloned().unwrap_or_default();
         Ok(result)
+    }
+}
+
+impl<T> Default for InMemoryDatabase<T>
+where
+    T: Serialize + Send + Sync + Clone,
+{
+    fn default() -> Self {
+        Self::new()
     }
 }
 

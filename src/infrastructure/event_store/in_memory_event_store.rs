@@ -19,7 +19,7 @@ impl<TEventPayload> InMemoryEventStore<TEventPayload>
 where
     TEventPayload: BasePayload,
 {
-    pub fn new() -> Self {
+    fn new() -> Self {
         InMemoryEventStore {
             is_offline: false,
             data: Arc::new(Mutex::new(HashMap::new())),
@@ -28,6 +28,15 @@ where
 
     pub fn go_offline(&mut self) {
         self.is_offline = true
+    }
+}
+
+impl<TEventPayload> Default for InMemoryEventStore<TEventPayload>
+where
+    TEventPayload: BasePayload,
+{
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -60,7 +69,7 @@ where
         }
 
         let data = self.data.lock().await;
-        let result = data.get(&stream_key).map(|v| v.clone()).unwrap_or_default();
+        let result = data.get(&stream_key).cloned().unwrap_or_default();
         Ok(result
             .into_iter()
             .map(|stored_event| stored_event.event)
