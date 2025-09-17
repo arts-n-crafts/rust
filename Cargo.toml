@@ -3,6 +3,13 @@ name = "arts-and-crafts_rs"
 version = "0.1.0"
 edition = "2021"
 
+[package.metadata.scripts]
+fmt = "cargo fmt --all -- --check"
+lint = "cargo clippy --all-targets --all-features"
+test = "cargo test --workspace"
+test-integration = "cargo test --workspace -- --ignored integration"
+audit = "RUST_LOG=info cargo audit --quiet"
+
 [dependencies]
 chrono = "0.4.42"
 serde = { version = "1.0.219", features = ["derive"] }
@@ -16,9 +23,13 @@ rstest = "0.26.1"
 chrono = "0.4.42"
 mongodb = "3.3.0"
 dotenvy = "0.15.7"
-strum = "0.27.2"
 strum_macros = "0.27.2"
 
 [dependencies.uuid]
 version = "1.18.1"
 features = ["v7", "serde"]
+
+[dev-dependencies.cargo-husky]
+version = "1"
+default-features = false
+features = ["user-hooks"]
