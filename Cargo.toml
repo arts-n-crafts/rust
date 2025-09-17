@@ -9,7 +9,6 @@ lint = "cargo clippy --all-targets --all-features"
 test = "cargo nextest run --workspace --retries 2"
 test-integration = "cargo nextest run --workspace --retries 2 -- --ignored integration"
 coverage = "cargo llvm-cov nextest --workspace --fail-under-functions 100 --fail-under-lines 100 --fail-under-regions 100"
-audit = "RUST_LOG=info cargo audit --quiet"
 
 [dependencies]
 chrono = "0.4.42"
@@ -25,6 +24,9 @@ chrono = "0.4.42"
 mongodb = "3.3.0"
 dotenvy = "0.15.7"
 strum_macros = "0.27.2"
+
+[build-dependencies]
+cargo-husky = "1"
 
 [dependencies.uuid]
 version = "1.18.1"

@@ -1,22 +1,19 @@
 #!/bin/sh
 
-# The script exits on the first failed command
 set -e
 
 echo "▶️ Running pre-commit hook..."
 
-echo "🧪 Running tests..."
-cargo run-script coverage
+echo "🧪 Running tests and code coverage..."
+cargo llvm-cov nextest --workspace --fail-under-functions 100 --fail-under-lines 100 --fail-under-regions 100
 
 echo "☣️ Checking for security vulnerabilities..."
-cargo run-script audit
+RUST_LOG=info cargo audit --quiet
 
 echo "✨ Formatting with fmt..."
-cargo run-script fmt
+cargo fmt --all -- --check
 
 echo "📝 Linting with clippy..."
-# The -D warnings flag elevates all warnings to errors, ensuring
-# clippy will exit with a non-zero code if any lints are found.
-cargo run-script lint
+cargo clippy --all-targets --all-features
 
 echo "✅ Pre-commit checks passed successfully!"
