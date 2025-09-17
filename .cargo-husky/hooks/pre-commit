@@ -6,7 +6,7 @@ set -e
 echo "▶️ Running pre-commit hook..."
 
 echo "🧪 Running tests..."
-cargo run-script test
+cargo run-script coverage
 
 echo "☣️ Checking for security vulnerabilities..."
 cargo run-script audit

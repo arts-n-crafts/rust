@@ -6,8 +6,9 @@ edition = "2021"
 [package.metadata.scripts]
 fmt = "cargo fmt --all -- --check"
 lint = "cargo clippy --all-targets --all-features"
-test = "cargo test --workspace"
-test-integration = "cargo test --workspace -- --ignored integration"
+test = "cargo nextest run --workspace --retries 2"
+test-integration = "cargo nextest run --workspace --retries 2 -- --ignored integration"
+coverage = "cargo llvm-cov nextest --workspace --fail-under-functions 100 --fail-under-lines 100 --fail-under-regions 100"
 audit = "RUST_LOG=info cargo audit --quiet"
 
 [dependencies]
