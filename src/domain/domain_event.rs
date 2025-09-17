@@ -1,8 +1,8 @@
+use crate::core::base_payload::BasePayload;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
-use crate::core::base_payload::BasePayload;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum EventSource {

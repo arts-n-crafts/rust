@@ -1,10 +1,9 @@
 #![allow(dead_code)]
 
+use arts_and_crafts_rs::domain::domain_event::DomainEvent;
 use serde::{Deserialize, Serialize};
 use strum_macros::AsRefStr;
 use uuid::Uuid;
-use arts_and_crafts_rs::domain::domain_event::{DomainEvent};
-
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, AsRefStr)]
 pub enum UserEventPayload {
@@ -14,6 +13,9 @@ pub enum UserEventPayload {
 
 pub fn generate_user_created_event() -> DomainEvent<UserEventPayload> {
     let aggregate_id = Uuid::now_v7().to_string();
-    let payload = UserEventPayload::UserCreated { id: aggregate_id.clone(), name: "John Doe".to_string() };
+    let payload = UserEventPayload::UserCreated {
+        id: aggregate_id.clone(),
+        name: "John Doe".to_string(),
+    };
     DomainEvent::create(aggregate_id, payload)
 }

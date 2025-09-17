@@ -1,10 +1,12 @@
 #[cfg(test)]
 mod common;
+use arts_and_crafts_rs::infrastructure::database::database_query::DatabaseQuery;
+use arts_and_crafts_rs::infrastructure::database::in_memory_database::{
+    DatabaseError, InMemoryDatabase,
+};
 use async_trait::async_trait;
 use common::user::User;
 use rstest::{fixture, rstest};
-use arts_and_crafts_rs::infrastructure::database::in_memory_database::{DatabaseError, InMemoryDatabase};
-use arts_and_crafts_rs::infrastructure::database::database_query::DatabaseQuery;
 
 struct GetUsersNamedJohn {
     db: InMemoryDatabase<User>,
@@ -24,18 +26,17 @@ impl DatabaseQuery<User, DatabaseError> for GetUsersNamedJohn {
             .iter()
             .filter(|user| user.name == "John")
             .cloned()
-            .collect()
-        )
+            .collect())
     }
 }
 
 #[fixture]
 fn users() -> Vec<User> {
     vec![
-        User::new(0.to_string(),"John".to_string()),
-        User::new(1.to_string(),"Jane".to_string()),
-        User::new(2.to_string(),"Joe".to_string()),
-        User::new(3.to_string(),"John".to_string())
+        User::new(0.to_string(), "John".to_string()),
+        User::new(1.to_string(), "Jane".to_string()),
+        User::new(2.to_string(), "Joe".to_string()),
+        User::new(3.to_string(), "John".to_string()),
     ]
 }
 

@@ -1,6 +1,6 @@
-use crate::domain::domain_event::{DomainEvent};
-use serde::{de::DeserializeOwned, Serialize};
 use crate::core::base_payload::BasePayload;
+use crate::domain::domain_event::DomainEvent;
+use serde::{de::DeserializeOwned, Serialize};
 
 pub trait Decider<TState, TCommand, TEventPayload>
 where
@@ -17,9 +17,9 @@ where
 mod decider_tests {
     use super::*;
     use rstest::rstest;
-    use uuid::Uuid;
     use serde::{Deserialize, Serialize};
     use strum_macros::AsRefStr;
+    use uuid::Uuid;
 
     #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
     pub struct User {
@@ -78,7 +78,7 @@ mod decider_tests {
                         panic!("Expected current state to be an evolved state, not initial state.");
                     }
                     DomainEvent::create(current_state.id, UserEventPayload::UserLiked)
-                },
+                }
             }
         }
     }
@@ -173,24 +173,19 @@ mod decider_tests {
     #[rstest]
     fn it_should_decide_to_emit_an_user_liked_event_based_on_like_user_command() {
         let aggregate_id = Uuid::now_v7();
-        let past_events = vec![
-            DomainEvent::create(
-                aggregate_id.to_string(),
-                UserEventPayload::UserCreated {
-                    id: aggregate_id.to_string(),
-                    name: "John Doe".to_string(),
-                },
-            )
-        ];
+        let past_events = vec![DomainEvent::create(
+            aggregate_id.to_string(),
+            UserEventPayload::UserCreated {
+                id: aggregate_id.to_string(),
+                name: "John Doe".to_string(),
+            },
+        )];
         let current_state = past_events
             .into_iter()
             .fold(UserDecider::initial_state(), |state, event| {
                 UserDecider::evolve(state, event)
             });
-        let event = UserDecider::decide(
-            current_state.clone(),
-            UserCommand::LikeUser,
-        );
+        let event = UserDecider::decide(current_state.clone(), UserCommand::LikeUser);
         let next_state = vec![event.clone()]
             .into_iter()
             .fold(current_state, |state, event| {

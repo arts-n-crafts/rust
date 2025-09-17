@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize,  Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StreamKey(String);
 
 impl StreamKey {
@@ -21,7 +21,7 @@ mod stream_key_test {
     use uuid::Uuid;
 
     #[rstest]
-    fn it_should_return_a_stream_key(){
+    fn it_should_return_a_stream_key() {
         let stream_name = "users";
         let aggregate_id = Uuid::now_v7();
         let stream_key = StreamKey::new(stream_name, aggregate_id.to_string());

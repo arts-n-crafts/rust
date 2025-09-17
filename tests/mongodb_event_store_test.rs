@@ -1,3 +1,4 @@
+use arts_and_crafts_rs::core::base_payload::BasePayload;
 #[cfg(test)]
 use arts_and_crafts_rs::domain::domain_event::DomainEvent;
 use arts_and_crafts_rs::infrastructure::event_store::event_store::{EventStore, EventStoreError};
@@ -14,7 +15,6 @@ use rstest::rstest;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use arts_and_crafts_rs::core::base_payload::BasePayload;
 
 mod common;
 use common::user_created_event::{generate_user_created_event, UserEventPayload};
