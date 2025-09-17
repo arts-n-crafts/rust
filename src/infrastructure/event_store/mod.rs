@@ -1,3 +1,6 @@
+pub mod in_memory_event_store;
+pub mod stored_event;
+pub mod stream_key;
 use crate::core::base_payload::BasePayload;
 use crate::domain::domain_event::DomainEvent;
 use crate::infrastructure::event_store::stream_key::StreamKey;

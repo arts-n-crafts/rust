@@ -68,15 +68,9 @@ mod decider_tests {
         fn decide(current_state: User, command: UserCommand) -> DomainEvent<UserEventPayload> {
             match command {
                 UserCommand::CreateUser { id, name } => {
-                    if current_state != UserDecider::initial_state() {
-                        panic!("Expected current state to be initial state.");
-                    }
                     DomainEvent::create(id.clone(), UserEventPayload::UserCreated { id, name })
                 }
                 UserCommand::LikeUser => {
-                    if current_state == UserDecider::initial_state() {
-                        panic!("Expected current state to be an evolved state, not initial state.");
-                    }
                     DomainEvent::create(current_state.id, UserEventPayload::UserLiked)
                 }
             }
@@ -139,12 +133,7 @@ mod decider_tests {
     #[rstest]
     fn it_should_decide_to_emit_an_user_created_event_based_on_create_user_command() {
         let aggregate_id = Uuid::now_v7();
-        let past_events = vec![];
-        let current_state = past_events
-            .into_iter()
-            .fold(UserDecider::initial_state(), |state, event| {
-                UserDecider::evolve(state, event)
-            });
+        let current_state = UserDecider::initial_state();
         let event = UserDecider::decide(
             current_state.clone(),
             UserCommand::CreateUser {

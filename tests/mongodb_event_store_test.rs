@@ -1,8 +1,8 @@
 use arts_and_crafts_rs::core::base_payload::BasePayload;
 #[cfg(test)]
 use arts_and_crafts_rs::domain::domain_event::DomainEvent;
-use arts_and_crafts_rs::infrastructure::event_store::event_store::{EventStore, EventStoreError};
 use arts_and_crafts_rs::infrastructure::event_store::stream_key::StreamKey;
+use arts_and_crafts_rs::infrastructure::event_store::{EventStore, EventStoreError};
 use chrono::Utc;
 use dotenvy::dotenv;
 use futures::future::join_all;

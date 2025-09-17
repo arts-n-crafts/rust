@@ -1,8 +1,8 @@
 use crate::core::base_payload::BasePayload;
 use crate::domain::domain_event::DomainEvent;
-use crate::infrastructure::event_store::event_store::{EventStore, EventStoreError};
 use crate::infrastructure::event_store::stored_event::StoredEvent;
 use crate::infrastructure::event_store::stream_key::StreamKey;
+use crate::infrastructure::event_store::{EventStore, EventStoreError};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -103,7 +103,7 @@ mod in_memory_event_store_tests {
     #[rstest]
     #[tokio::test]
     async fn should_store_the_data(user_liked_event: DomainEvent<UserEventPayload>) {
-        let event_store = InMemoryEventStore::new();
+        let event_store = InMemoryEventStore::default();
         let stream_key = StreamKey::new("users", user_liked_event.aggregate_id.clone());
         let result = event_store.append(stream_key, user_liked_event).await;
         assert!(result.is_ok());

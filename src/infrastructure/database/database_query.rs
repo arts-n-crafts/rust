@@ -7,7 +7,7 @@ pub trait DatabaseQuery<T: Serialize + Send + Sync + Clone, E> {
 }
 
 #[cfg(test)]
-mod database_query {
+mod database_query_tests {
     use super::*;
     use rstest::{fixture, rstest};
     use serde::{Deserialize, Serialize};

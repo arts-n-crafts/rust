@@ -64,14 +64,16 @@ where
 }
 
 #[cfg(test)]
-mod in_memory_database {
+mod in_memory_database_tests {
     use super::*;
     use rstest::{fixture, rstest};
     const TABLE_NAME: &str = "users";
-    #[derive(Serialize, Clone)]
+
+    #[derive(Serialize, Clone, Debug, PartialEq)]
     struct User {
         name: String,
     }
+
     #[fixture]
     fn user() -> Vec<User> {
         vec![User {
@@ -82,7 +84,7 @@ mod in_memory_database {
     #[rstest]
     #[tokio::test]
     async fn should_store_the_data(user: Vec<User>) {
-        let db = InMemoryDatabase::new();
+        let db = InMemoryDatabase::default();
         let result = db.store(TABLE_NAME, user[0].to_owned()).await;
         assert!(result.is_ok());
     }
