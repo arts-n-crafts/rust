@@ -5,6 +5,7 @@ edition = "2021"
 
 [package.metadata.scripts]
 fmt = "cargo fmt --all -- --check"
+fmt-fix = "cargo fmt --all"
 lint = "cargo clippy --all-targets --all-features"
 test = "cargo nextest run --workspace --retries 2"
 test-integration = "cargo nextest run --workspace --retries 2 -- --ignored integration"
