@@ -128,7 +128,7 @@ where
 #[rstest]
 #[tokio::test]
 #[ignore]
-async fn mongodb_should_store_the_event() {
+async fn integration_mongodb_should_store_the_event() {
     let connection_string = MongodbEventStore::make_connection_string_from_env();
     let event_store = MongodbEventStore::new(connection_string).await;
     let user_created_event = generate_user_created_event();
@@ -140,7 +140,7 @@ async fn mongodb_should_store_the_event() {
 #[rstest]
 #[tokio::test]
 #[ignore]
-async fn mongodb_should_load_the_events_of_the_stream() {
+async fn integration_mongodb_should_load_the_events_of_the_stream() {
     let user_created_event = generate_user_created_event();
     let user_updated_event = DomainEvent::create(
         user_created_event.aggregate_id.clone(),
