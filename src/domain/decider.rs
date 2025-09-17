@@ -1,11 +1,12 @@
-use crate::domain::domain_event::{DomainEvent, EventPayload};
+use crate::domain::domain_event::{DomainEvent};
 use serde::{de::DeserializeOwned, Serialize};
+use crate::core::base_payload::BasePayload;
 
 pub trait Decider<TState, TCommand, TEventPayload>
 where
     TState: Serialize + DeserializeOwned + Send + Sync + Clone,
     TCommand: Serialize + DeserializeOwned + Send + Sync + Clone,
-    TEventPayload: EventPayload,
+    TEventPayload: BasePayload,
 {
     fn initial_state() -> TState;
     fn evolve(current_state: TState, event: DomainEvent<TEventPayload>) -> TState;

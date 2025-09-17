@@ -2,9 +2,7 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
-
-pub trait EventPayload: Serialize + Send + Sync + Clone {}
-impl<T> EventPayload for T where T: Serialize + Send + Sync + Clone {}
+use crate::core::base_payload::BasePayload;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum EventSource {
@@ -15,7 +13,7 @@ pub enum EventSource {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct DomainEvent<TPayload>
 where
-    TPayload: EventPayload,
+    TPayload: BasePayload,
 {
     id: String,
     pub aggregate_id: String,
@@ -28,7 +26,7 @@ where
 
 impl<TPayload> DomainEvent<TPayload>
 where
-    TPayload: EventPayload + AsRef<str>,
+    TPayload: BasePayload + AsRef<str>,
 {
     pub fn create(aggregate_id: String, payload: TPayload) -> Self {
         DomainEvent {

@@ -1,42 +1,15 @@
+use crate::core::base_payload::BasePayload;
+use crate::domain::domain_event::DomainEvent;
 use crate::infrastructure::event_store::event_store::{EventStore, EventStoreError};
+use crate::infrastructure::event_store::stored_event::StoredEvent;
 use crate::infrastructure::event_store::stream_key::StreamKey;
-use chrono::Utc;
-use serde::{Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use uuid::Uuid;
-use crate::domain::domain_event::{DomainEvent, EventPayload};
 
-#[derive(Serialize, Debug, PartialEq, Clone)]
-pub struct StoredEvent<TEventPayload>
-where
-    TEventPayload: EventPayload,
-{
-    pub id: Uuid,
-    stream_key: StreamKey,
-    version: u8,
-    pub event: DomainEvent<TEventPayload>,
-    timestamp: i64,
-}
-
-impl<TEventPayload> StoredEvent<TEventPayload>
-where
-    TEventPayload: EventPayload,
-{
-    pub fn new(stream_key: StreamKey, version: u8, event: DomainEvent<TEventPayload>) -> Self {
-        StoredEvent {
-            id: Uuid::now_v7(),
-            stream_key,
-            version,
-            event,
-            timestamp: Utc::now().timestamp_millis(),
-        }
-    }
-}
 pub struct InMemoryEventStore<TEventPayload>
 where
-    TEventPayload: EventPayload,
+    TEventPayload: BasePayload,
 {
     data: Arc<Mutex<HashMap<StreamKey, Vec<StoredEvent<TEventPayload>>>>>,
     is_offline: bool,
@@ -44,7 +17,7 @@ where
 
 impl<TEventPayload> InMemoryEventStore<TEventPayload>
 where
-    TEventPayload: EventPayload,
+    TEventPayload: BasePayload,
 {
     pub fn new() -> Self {
         InMemoryEventStore {
@@ -60,9 +33,13 @@ where
 
 impl<TEventPayload> EventStore<TEventPayload> for InMemoryEventStore<TEventPayload>
 where
-    TEventPayload: EventPayload,
+    TEventPayload: BasePayload,
 {
-    async fn append(&self, stream_key: StreamKey, event: DomainEvent<TEventPayload>) -> Result<(), EventStoreError> {
+    async fn append(
+        &self,
+        stream_key: StreamKey,
+        event: DomainEvent<TEventPayload>,
+    ) -> Result<(), EventStoreError> {
         if self.is_offline {
             return Err(EventStoreError::AppendError);
         }
@@ -74,7 +51,10 @@ where
         Ok(())
     }
 
-    async fn load(&self, stream_key: StreamKey) -> Result<Vec<DomainEvent<TEventPayload>>, EventStoreError> {
+    async fn load(
+        &self,
+        stream_key: StreamKey,
+    ) -> Result<Vec<DomainEvent<TEventPayload>>, EventStoreError> {
         if self.is_offline {
             return Err(EventStoreError::LoadError);
         }
@@ -87,34 +67,14 @@ where
             .collect())
     }
 }
-
-#[cfg(test)]
-mod stored_event_test {
-    use super::*;
-    use crate::domain::domain_event::DomainEvent;
-    use rstest::rstest;
-    use crate::infrastructure::event_store::in_memory_event_store::in_memory_event_store_tests::UserEventPayload;
-
-    #[rstest]
-    fn it_should_create_a_stored_event() {
-        let aggregate_id = Uuid::now_v7();
-        let stream_key = StreamKey::new("users", aggregate_id.to_string());
-        let payload = UserEventPayload::UserLiked;
-        let event = DomainEvent::create(aggregate_id.to_string(), payload);
-        let stored_event = StoredEvent::new(stream_key.clone(), 1, event.clone());
-        assert_eq!(stored_event.stream_key, stream_key);
-        assert_eq!(stored_event.version, 1);
-        assert_eq!(stored_event.event, event);
-    }
-}
-
 #[cfg(test)]
 mod in_memory_event_store_tests {
-    use futures::future::join_all;
     use super::*;
-    use crate::domain::domain_event::{DomainEvent};
+    use crate::domain::domain_event::DomainEvent;
+    use futures::future::join_all;
     use rstest::{fixture, rstest};
     use serde::Deserialize;
+    use serde::Serialize;
     use strum_macros::AsRefStr;
     use uuid::Uuid;
 
@@ -169,15 +129,18 @@ mod in_memory_event_store_tests {
 
     #[rstest]
     #[tokio::test]
-    async fn should_query_all_the_data_in_the_stream(user_liked_event: DomainEvent<UserEventPayload>) {
+    async fn should_query_all_the_data_in_the_stream(
+        user_liked_event: DomainEvent<UserEventPayload>,
+    ) {
         let event_store = InMemoryEventStore::new();
         let stream_key = StreamKey::new("users", user_liked_event.aggregate_id.clone());
         let iterations = 100;
         join_all(
             (0..iterations)
                 .map(|_| event_store.append(stream_key.clone(), user_liked_event.clone()))
-                .collect::<Vec<_>>()
-        ).await;
+                .collect::<Vec<_>>(),
+        )
+        .await;
         let result = event_store.load(stream_key).await;
         assert!(result.is_ok());
         let events = result.expect("Failed to load events");

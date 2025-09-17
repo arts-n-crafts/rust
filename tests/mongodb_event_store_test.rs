@@ -1,6 +1,5 @@
 #[cfg(test)]
 use arts_and_crafts_rs::domain::domain_event::DomainEvent;
-use arts_and_crafts_rs::domain::domain_event::EventPayload;
 use arts_and_crafts_rs::infrastructure::event_store::event_store::{EventStore, EventStoreError};
 use arts_and_crafts_rs::infrastructure::event_store::stream_key::StreamKey;
 use chrono::Utc;
@@ -15,6 +14,7 @@ use rstest::rstest;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use arts_and_crafts_rs::core::base_payload::BasePayload;
 
 mod common;
 use common::user_created_event::{generate_user_created_event, UserEventPayload};
@@ -22,7 +22,7 @@ use common::user_created_event::{generate_user_created_event, UserEventPayload};
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct MongoStoredEvent<TEventPayload>
 where
-    TEventPayload: EventPayload,
+    TEventPayload: BasePayload,
 {
     pub _id: String,
     stream_key: StreamKey,
@@ -33,7 +33,7 @@ where
 
 impl<TEventPayloadPayload> MongoStoredEvent<TEventPayloadPayload>
 where
-    TEventPayloadPayload: EventPayload,
+    TEventPayloadPayload: BasePayload,
 {
     pub fn new(
         stream_key: StreamKey,
@@ -77,7 +77,7 @@ impl MongodbEventStore {
 
 impl<TEventPayload> EventStore<TEventPayload> for MongodbEventStore
 where
-    TEventPayload: EventPayload + AsRef<str> + DeserializeOwned + Serialize,
+    TEventPayload: BasePayload + AsRef<str> + DeserializeOwned + Serialize,
 {
     async fn append(
         &self,
