@@ -1,4 +1,5 @@
-mod decider;
+pub mod decider;
 pub mod domain_event;
-mod repository;
+pub mod repository;
 mod specification;
+pub mod with_identifier;

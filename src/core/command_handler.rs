@@ -19,17 +19,13 @@ mod command_handler_tests {
     use serde::{Deserialize, Serialize};
     use strum_macros::AsRefStr;
     use uuid::Uuid;
+    use crate::domain::with_identifier::WithIdentifier;
 
     #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
     struct User {
         pub id: String,
         pub name: String,
         pub likes: u8,
-    }
-
-    #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
-    struct UserCommandResult {
-        id: String,
     }
 
     #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, AsRefStr)]
@@ -41,12 +37,12 @@ mod command_handler_tests {
     struct CreateUserCommandHandler;
 
     #[async_trait]
-    impl CommandHandler<UserCommandPayload, UserCommandResult, ()> for CreateUserCommandHandler {
+    impl CommandHandler<UserCommandPayload, WithIdentifier, ()> for CreateUserCommandHandler {
         async fn execute(
             &self,
             a_command: Command<UserCommandPayload>,
-        ) -> Result<UserCommandResult, ()> {
-            Ok(UserCommandResult {
+        ) -> Result<WithIdentifier, ()> {
+            Ok(WithIdentifier {
                 id: a_command.aggregate_id,
             })
         }
