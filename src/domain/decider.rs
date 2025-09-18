@@ -1,4 +1,5 @@
 use crate::core::base_payload::BasePayload;
+use crate::core::command::Command;
 use crate::domain::domain_event::DomainEvent;
 use serde::{de::DeserializeOwned, Serialize};
 
@@ -10,7 +11,7 @@ where
 {
     fn initial_state() -> TState;
     fn evolve(current_state: TState, event: DomainEvent<TEventPayload>) -> TState;
-    fn decide(current_state: TState, command: TCommand) -> DomainEvent<TEventPayload>;
+    fn decide(current_state: TState, command: Command<TCommand>) -> DomainEvent<TEventPayload>;
 }
 
 #[cfg(test)]
@@ -34,7 +35,7 @@ mod decider_tests {
         }
     }
 
-    #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+    #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, AsRefStr)]
     pub enum UserCommand {
         CreateUser { id: String, name: String },
         LikeUser,
@@ -65,8 +66,11 @@ mod decider_tests {
                 }
             }
         }
-        fn decide(current_state: User, command: UserCommand) -> DomainEvent<UserEventPayload> {
-            match command {
+        fn decide(
+            current_state: User,
+            command: Command<UserCommand>,
+        ) -> DomainEvent<UserEventPayload> {
+            match command.payload {
                 UserCommand::CreateUser { id, name } => {
                     DomainEvent::create(id.clone(), UserEventPayload::UserCreated { id, name })
                 }
@@ -134,13 +138,14 @@ mod decider_tests {
     fn it_should_decide_to_emit_an_user_created_event_based_on_create_user_command() {
         let aggregate_id = Uuid::now_v7();
         let current_state = UserDecider::initial_state();
-        let event = UserDecider::decide(
-            current_state.clone(),
+        let command = Command::create(
+            aggregate_id.to_string(),
             UserCommand::CreateUser {
                 id: aggregate_id.to_string(),
                 name: "John Doe".to_string(),
             },
         );
+        let event = UserDecider::decide(current_state.clone(), command);
         let next_state = vec![event.clone()]
             .into_iter()
             .fold(current_state, |state, event| {
@@ -174,7 +179,8 @@ mod decider_tests {
             .fold(UserDecider::initial_state(), |state, event| {
                 UserDecider::evolve(state, event)
             });
-        let event = UserDecider::decide(current_state.clone(), UserCommand::LikeUser);
+        let command = Command::create(aggregate_id.to_string(), UserCommand::LikeUser);
+        let event = UserDecider::decide(current_state.clone(), command);
         let next_state = vec![event.clone()]
             .into_iter()
             .fold(current_state, |state, event| {

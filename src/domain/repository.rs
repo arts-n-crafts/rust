@@ -3,25 +3,30 @@ use crate::domain::domain_event::DomainEvent;
 use crate::domain::with_identifier::WithIdentifier;
 use async_trait::async_trait;
 use std::fmt::Debug;
+use thiserror::Error;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Error, PartialEq)]
 pub enum RepositoryError {
-    AppendError,
-    LoadError,
+    #[error("appending failed")]
+    AppendFailed,
+
+    #[error("loading failed")]
+    LoadFailed,
 }
 
 #[async_trait]
-pub trait Repository<TState, TEventPayload>
+pub trait Repository<TState, TEventPayload, TError>
 where
     TState: Debug + PartialEq,
     TEventPayload: BasePayload,
+    TError: std::error::Error + Send + Sync + 'static,
 {
     async fn store(
         &self,
         events: Vec<DomainEvent<TEventPayload>>,
-    ) -> Result<WithIdentifier, RepositoryError>;
+    ) -> Result<WithIdentifier, TError>;
 
-    async fn load(&self, aggregate_id: String) -> Result<TState, RepositoryError>;
+    async fn load(&self, aggregate_id: String) -> Result<TState, TError>;
 }
 
 #[cfg(test)]
@@ -49,7 +54,7 @@ pub mod repository_tests {
     struct UserRepository;
 
     #[async_trait]
-    impl Repository<User, UserEventPayload> for UserRepository {
+    impl Repository<User, UserEventPayload, RepositoryError> for UserRepository {
         async fn store(
             &self,
             events: Vec<DomainEvent<UserEventPayload>>,

@@ -3,10 +3,12 @@ use crate::domain::domain_event::DomainEvent;
 use crate::infrastructure::event_store::stored_event::StoredEvent;
 use crate::infrastructure::event_store::stream_key::StreamKey;
 use crate::infrastructure::event_store::{EventStore, EventStoreError};
+use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+#[derive(Clone)]
 pub struct InMemoryEventStore<TEventPayload>
 where
     TEventPayload: BasePayload,
@@ -40,9 +42,10 @@ where
     }
 }
 
+#[async_trait]
 impl<TEventPayload> EventStore<TEventPayload> for InMemoryEventStore<TEventPayload>
 where
-    TEventPayload: BasePayload,
+    TEventPayload: BasePayload + 'static,
 {
     async fn append(
         &self,
@@ -50,7 +53,7 @@ where
         event: DomainEvent<TEventPayload>,
     ) -> Result<(), EventStoreError> {
         if self.is_offline {
-            return Err(EventStoreError::AppendError);
+            return Err(EventStoreError::AppendFailed);
         }
         let stored_event = StoredEvent::new(stream_key.clone(), 1, event);
         let mut data = self.data.lock().await;
@@ -65,7 +68,7 @@ where
         stream_key: StreamKey,
     ) -> Result<Vec<DomainEvent<TEventPayload>>, EventStoreError> {
         if self.is_offline {
-            return Err(EventStoreError::LoadError);
+            return Err(EventStoreError::LoadFailed);
         }
 
         let data = self.data.lock().await;
@@ -119,7 +122,7 @@ mod in_memory_event_store_tests {
         let stream_key = StreamKey::new("users", user_liked_event.aggregate_id.clone());
         let result = event_store.append(stream_key, user_liked_event).await;
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), EventStoreError::AppendError);
+        assert_eq!(result.unwrap_err(), EventStoreError::AppendFailed);
     }
 
     #[rstest]
@@ -164,6 +167,6 @@ mod in_memory_event_store_tests {
         let stream_key = StreamKey::new("users", Uuid::now_v7().to_string());
         let result = event_store.load(stream_key).await;
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), EventStoreError::LoadError);
+        assert_eq!(result.unwrap_err(), EventStoreError::LoadFailed);
     }
 }

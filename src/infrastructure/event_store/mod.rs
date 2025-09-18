@@ -4,26 +4,30 @@ pub mod stream_key;
 use crate::core::base_payload::BasePayload;
 use crate::domain::domain_event::DomainEvent;
 use crate::infrastructure::event_store::stream_key::StreamKey;
-use std::future::Future;
+use async_trait::async_trait;
+use thiserror::Error;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Error, PartialEq)]
 pub enum EventStoreError {
-    AppendError,
-    LoadError,
+    #[error("loading failed")]
+    LoadFailed,
+    #[error("appending failed")]
+    AppendFailed,
 }
 
-pub trait EventStore<TEvent>
+#[async_trait]
+pub trait EventStore<TEvent>: Send + Sync + Clone + 'static
 where
-    TEvent: BasePayload,
+    TEvent: BasePayload + Send + Sync,
 {
-    fn append(
+    async fn append(
         &self,
         key: StreamKey,
         value: DomainEvent<TEvent>,
-    ) -> impl Future<Output = Result<(), EventStoreError>>;
+    ) -> Result<(), EventStoreError>;
 
-    fn load(
+    async fn load(
         &self,
         stream_key: StreamKey,
-    ) -> impl Future<Output = Result<Vec<DomainEvent<TEvent>>, EventStoreError>>;
+    ) -> Result<Vec<DomainEvent<TEvent>>, EventStoreError>;
 }

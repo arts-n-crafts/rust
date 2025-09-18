@@ -7,14 +7,13 @@ use uuid::Uuid;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, AsRefStr)]
 pub enum UserEventPayload {
-    UserCreated { id: String, name: String },
+    UserCreated { name: String },
     UserLiked,
 }
 
 pub fn generate_user_created_event() -> DomainEvent<UserEventPayload> {
     let aggregate_id = Uuid::now_v7().to_string();
     let payload = UserEventPayload::UserCreated {
-        id: aggregate_id.clone(),
         name: "John Doe".to_string(),
     };
     DomainEvent::create(aggregate_id, payload)
