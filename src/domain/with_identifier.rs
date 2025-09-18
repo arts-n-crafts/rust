@@ -7,9 +7,9 @@ pub struct WithIdentifier {
 
 #[cfg(test)]
 mod with_identifier_tests {
+    use super::*;
     use rstest::rstest;
     use uuid::Uuid;
-    use super::*;
 
     #[rstest]
     fn it_should_contain_an_id() {

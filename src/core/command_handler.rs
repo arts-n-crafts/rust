@@ -15,11 +15,11 @@ where
 #[cfg(test)]
 mod command_handler_tests {
     use super::*;
+    use crate::domain::with_identifier::WithIdentifier;
     use rstest::rstest;
     use serde::{Deserialize, Serialize};
     use strum_macros::AsRefStr;
     use uuid::Uuid;
-    use crate::domain::with_identifier::WithIdentifier;
 
     #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
     struct User {
