@@ -6,13 +6,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  release-plz-release:
-    name: Release-plz release
+  verify-changes:
+    name: Verify changes made
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'arts-n-crafts' }}
-    permissions:
-#      id-token: write
-      contents: write
     steps:
       - &checkout
         name: Checkout repository
@@ -23,6 +20,65 @@ jobs:
       - &install-rust
         name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+      - name: 🧪 Running tests and code coverage...
+        run: cargo llvm-cov nextest --workspace --fail-under-functions 100 --fail-under-lines 100 --fail-under-regions 100
+      - name: ☣️ Checking for security vulnerabilities...
+        run: RUST_LOG=info cargo audit --quiet
+      - name: ✨ Formatting with fmt...
+        run: cargo fmt --all -- --check
+      - name: 📝 Linting with clippy...
+        run: cargo clippy --all-targets --all-features
+
+  test-integration:
+    name: Run integration tests
+    runs-on: ubuntu-latest
+    environment: test
+    needs: verify-changes
+    steps:
+      - *checkout
+      - *install-rust
+      - run: docker compose -f docker/docker-compose.yaml up -d
+        env:
+          MONGO_EXPRESS_REPLICAS: 0
+          MONGO_INITDB_ROOT_USERNAME: ${{ vars.MONGO_INITDB_ROOT_USERNAME }}
+          MONGO_INITDB_ROOT_PASSWORD: ${{ vars.MONGO_INITDB_ROOT_PASSWORD }}
+
+      - name: Wait for Mongo
+        run: |
+          echo "Waiting for Mongo (max 3 minutes)..."
+          START_TIME=$(date +%s)
+          TIMEOUT=180
+          while true; do
+            if docker exec $(docker ps -qf "name=mongo") mongosh --eval "db.stats()" >/dev/null 2>&1; then
+              echo "Mongo is ready ✅"
+              break
+            fi
+            NOW=$(date +%s)
+            ELAPSED=$((NOW - START_TIME))
+            if [ $ELAPSED -ge $TIMEOUT ]; then
+              echo "Mongo did not respond in 3 minutes ❌"
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - run: cargo nextest run --workspace --retries 2 -- --ignored integration
+        env:
+          MONGO_INITDB_ROOT_USERNAME: ${{ vars.MONGO_INITDB_ROOT_USERNAME }}
+          MONGO_INITDB_ROOT_PASSWORD: ${{ vars.MONGO_INITDB_ROOT_PASSWORD }}
+
+      - run: docker compose -f docker/docker-compose.yaml down -v
+
+  release-plz-release:
+    name: Release-plz release
+    runs-on: ubuntu-latest
+    needs: [verify-changes, test-integration]
+    permissions:
+#      id-token: write
+      contents: write
+    steps:
+      - *checkout
+      - *install-rust
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
@@ -30,9 +86,11 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   release-plz-pr:
     name: Release-plz PR
     runs-on: ubuntu-latest
+    needs: [ verify-changes, test-integration ]
     permissions:
 #      id-token: write
       contents: write
