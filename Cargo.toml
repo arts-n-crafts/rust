@@ -2,7 +2,10 @@
 name = "arts-n-crafts"
 description = "Arts and Crafts was a reaction against the industrialization and excess of the Victorian era, and it sought to celebrate traditional craftsmanship and materials. Arts and Crafts architecture is characterized by a simple and functional design, the use of natural materials, and a focus on craftsmanship."
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/arts-n-crafts/rust"
 
 [package.metadata.scripts]
 fmt = "cargo fmt --all -- --check"

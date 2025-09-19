@@ -1,0 +1,14 @@
+[workspace]
+allow_dirty = false
+changelog_update = true
+git_release_enable = true
+
+[[package]]
+name = "arts-n-crafts"
+changelog_update = true
+changelog_path = "CHANGELOG.md"
+publish = true
+semver_check = true
+
+[changelog]
+protect_breaking_commits = true
