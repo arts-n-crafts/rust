@@ -5,12 +5,12 @@ use crate::common::mongodb_event_store::MongodbEventStore;
 use crate::common::user_command::UserCommandPayload;
 use crate::common::user_event::UserEventPayload;
 use crate::common::user_repository::UserRepository;
-use arts_and_crafts_rs::core::command::Command;
-use arts_and_crafts_rs::core::command_handler::CommandHandler;
-use arts_and_crafts_rs::domain::domain_event::DomainEvent;
-use arts_and_crafts_rs::domain::with_identifier::WithIdentifier;
-use arts_and_crafts_rs::infrastructure::event_store::stream_key::StreamKey;
-use arts_and_crafts_rs::infrastructure::event_store::EventStore;
+use arts_n_crafts::core::command::Command;
+use arts_n_crafts::core::command_handler::CommandHandler;
+use arts_n_crafts::domain::domain_event::DomainEvent;
+use arts_n_crafts::domain::with_identifier::WithIdentifier;
+use arts_n_crafts::infrastructure::event_store::stream_key::StreamKey;
+use arts_n_crafts::infrastructure::event_store::EventStore;
 use rstest::rstest;
 use uuid::Uuid;
 

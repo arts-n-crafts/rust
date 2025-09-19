@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use arts_and_crafts_rs::domain::domain_event::DomainEvent;
+use arts_n_crafts::domain::domain_event::DomainEvent;
 use serde::{Deserialize, Serialize};
 use strum_macros::AsRefStr;
 use uuid::Uuid;

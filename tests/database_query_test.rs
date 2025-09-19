@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod common;
-use arts_and_crafts_rs::infrastructure::database::database_query::DatabaseQuery;
-use arts_and_crafts_rs::infrastructure::database::in_memory_database::{
+use arts_n_crafts::infrastructure::database::database_query::DatabaseQuery;
+use arts_n_crafts::infrastructure::database::in_memory_database::{
     DatabaseError, InMemoryDatabase,
 };
 use async_trait::async_trait;

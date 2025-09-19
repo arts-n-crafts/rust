@@ -1,9 +1,9 @@
 use crate::common::user::User;
 use crate::common::user_command::UserCommandPayload;
 use crate::common::user_event::UserEventPayload;
-use arts_and_crafts_rs::core::command::Command;
-use arts_and_crafts_rs::domain::decider::Decider;
-use arts_and_crafts_rs::domain::domain_event::DomainEvent;
+use arts_n_crafts::core::command::Command;
+use arts_n_crafts::domain::decider::Decider;
+use arts_n_crafts::domain::domain_event::DomainEvent;
 
 #[allow(dead_code)]
 pub struct UserDecider;

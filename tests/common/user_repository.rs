@@ -1,12 +1,12 @@
 use crate::common::user::User;
 use crate::common::user_decider::UserDecider;
 use crate::common::user_event::UserEventPayload;
-use arts_and_crafts_rs::domain::decider::Decider;
-use arts_and_crafts_rs::domain::domain_event::DomainEvent;
-use arts_and_crafts_rs::domain::repository::Repository;
-use arts_and_crafts_rs::domain::with_identifier::WithIdentifier;
-use arts_and_crafts_rs::infrastructure::event_store::stream_key::StreamKey;
-use arts_and_crafts_rs::infrastructure::event_store::{EventStore, EventStoreError};
+use arts_n_crafts::domain::decider::Decider;
+use arts_n_crafts::domain::domain_event::DomainEvent;
+use arts_n_crafts::domain::repository::Repository;
+use arts_n_crafts::domain::with_identifier::WithIdentifier;
+use arts_n_crafts::infrastructure::event_store::stream_key::StreamKey;
+use arts_n_crafts::infrastructure::event_store::{EventStore, EventStoreError};
 use async_trait::async_trait;
 use thiserror::Error;
 

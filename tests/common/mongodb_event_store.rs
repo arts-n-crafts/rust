@@ -1,7 +1,7 @@
-use arts_and_crafts_rs::core::base_payload::BasePayload;
-use arts_and_crafts_rs::domain::domain_event::DomainEvent;
-use arts_and_crafts_rs::infrastructure::event_store::stream_key::StreamKey;
-use arts_and_crafts_rs::infrastructure::event_store::{EventStore, EventStoreError};
+use arts_n_crafts::core::base_payload::BasePayload;
+use arts_n_crafts::domain::domain_event::DomainEvent;
+use arts_n_crafts::infrastructure::event_store::stream_key::StreamKey;
+use arts_n_crafts::infrastructure::event_store::{EventStore, EventStoreError};
 use async_trait::async_trait;
 use chrono::Utc;
 use dotenvy::dotenv;

@@ -15,13 +15,13 @@ pub struct DomainEvent<TPayload>
 where
     TPayload: BasePayload,
 {
-    id: String,
+    pub event_id: String,
+    pub event_type: String,
+    pub event_source: EventSource,
     pub aggregate_id: String,
-    source: EventSource,
     pub payload: TPayload,
-    r#type: String,
-    timestamp: i64,
-    metadata: HashMap<String, String>,
+    pub timestamp: i64,
+    pub metadata: HashMap<String, String>,
 }
 
 impl<TPayload> DomainEvent<TPayload>
@@ -30,11 +30,11 @@ where
 {
     pub fn create(aggregate_id: String, payload: TPayload) -> Self {
         DomainEvent {
-            id: Uuid::now_v7().to_string(),
+            event_id: Uuid::now_v7().to_string(),
+            event_source: EventSource::Internal,
+            event_type: payload.as_ref().to_string(),
             aggregate_id: aggregate_id.to_string(),
-            source: EventSource::Internal,
             payload: payload.clone(),
-            r#type: payload.as_ref().to_string(),
             timestamp: Utc::now().timestamp_millis(),
             metadata: HashMap::new(),
         }
@@ -92,7 +92,7 @@ mod create_domain_event_tests {
         let event = DomainEvent::create(aggregate_id.to_string(), payload.clone());
         assert_eq!(event.payload.as_ref(), payload.as_ref());
         assert_eq!(event.aggregate_id, aggregate_id.to_string());
-        assert_eq!(event.source, EventSource::Internal);
+        assert_eq!(event.event_source, EventSource::Internal);
         assert_eq!(event.payload, payload);
         assert_eq!(event.metadata, HashMap::new());
     }

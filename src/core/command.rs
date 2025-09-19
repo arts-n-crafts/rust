@@ -8,11 +8,11 @@ pub struct Command<TPayload>
 where
     TPayload: BasePayload,
 {
-    r#type: String,
+    pub command_type: String,
     pub aggregate_id: String,
     pub payload: TPayload,
-    timestamp: i64,
-    metadata: HashMap<String, String>,
+    pub timestamp: i64,
+    pub metadata: HashMap<String, String>,
 }
 
 impl<TPayload> Command<TPayload>
@@ -21,7 +21,7 @@ where
 {
     pub fn create(aggregate_id: String, payload: TPayload) -> Self {
         Command {
-            r#type: payload.as_ref().to_string(),
+            command_type: payload.as_ref().to_string(),
             aggregate_id: aggregate_id.to_string(),
             payload: payload.clone(),
             timestamp: Utc::now().timestamp_millis(),
