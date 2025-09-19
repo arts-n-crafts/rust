@@ -1,7 +1,7 @@
 use crate::core::base_payload::BasePayload;
 use crate::core::command::Command;
 use crate::domain::domain_event::DomainEvent;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 
 pub trait Decider<TState, TCommand, TEventPayload>
 where

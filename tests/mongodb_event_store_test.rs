@@ -1,13 +1,13 @@
 #[cfg(test)]
 use arts_n_crafts::domain::domain_event::DomainEvent;
-use arts_n_crafts::infrastructure::event_store::stream_key::StreamKey;
 use arts_n_crafts::infrastructure::event_store::EventStore;
+use arts_n_crafts::infrastructure::event_store::stream_key::StreamKey;
 use futures::future::join_all;
 use rstest::rstest;
 
 mod common;
 use common::mongodb_event_store::MongodbEventStore;
-use common::user_event::{generate_user_created_event, UserEventPayload};
+use common::user_event::{UserEventPayload, generate_user_created_event};
 
 #[rstest]
 #[tokio::test]

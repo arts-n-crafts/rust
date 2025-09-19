@@ -9,8 +9,8 @@ use arts_n_crafts::core::command::Command;
 use arts_n_crafts::core::command_handler::CommandHandler;
 use arts_n_crafts::domain::domain_event::DomainEvent;
 use arts_n_crafts::domain::with_identifier::WithIdentifier;
-use arts_n_crafts::infrastructure::event_store::stream_key::StreamKey;
 use arts_n_crafts::infrastructure::event_store::EventStore;
+use arts_n_crafts::infrastructure::event_store::stream_key::StreamKey;
 use rstest::rstest;
 use uuid::Uuid;
 
