@@ -17,6 +17,8 @@ services:
   mongo-express_rs:
     image: mongo-express:latest
     container_name: mongo-express_rs
+    # docker compose --profile local up -d
+    profiles: [ "local" ]
     restart: no
     environment:
       ME_CONFIG_BASICAUTH: false
