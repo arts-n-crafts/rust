@@ -21,6 +21,7 @@ mod command_handler_tests {
     use strum_macros::AsRefStr;
     use uuid::Uuid;
 
+    #[allow(dead_code)]
     #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
     struct User {
         pub id: String,

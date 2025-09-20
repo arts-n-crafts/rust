@@ -63,6 +63,7 @@ mod create_domain_event_tests {
     use strum_macros::AsRefStr;
     use uuid::Uuid;
 
+    #[allow(dead_code)]
     #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
     pub struct User {
         pub id: String,
