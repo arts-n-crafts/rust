@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1](https://github.com/arts-n-crafts/rust/compare/v0.1.0...v0.1.1) - 2025-09-20
+
+### Other
+
+- codeQL analysis
+- optimize pipeline
+- resolve warnings
+- add developer tools to the pipeline
+- fmt
+- added verify changes and integration tests
+- release v0.1.0
+
 ## [0.1.0](https://github.com/arts-n-crafts/rust/releases/tag/v0.1.0) - 2025-09-19
 
 ### Added
