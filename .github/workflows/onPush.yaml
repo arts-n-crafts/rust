@@ -12,27 +12,35 @@ jobs:
     if: ${{ github.repository_owner == 'arts-n-crafts' }}
     steps:
       - &checkout
-        name: 💾Checkout repository...
+        name: 💾 Checkout repository...
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - &install-rust
-        name: ⚙️Install Rust toolchain...
+        name: ⚙️ Install Rust toolchain...
         uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
 
-      - &install-test-tools
-        name: 🪛Install nextest test-tool...
+      - &binstall
+        name: 🗄️ Install cargo-binstall...
         run: |
-          cargo install cargo-nextest --locked
+          curl -L https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-gnu.tgz \
+            | tar -xz -C ~/.cargo/bin
 
-      - name: 🛠️Install audit and coverage dev-tools...
+      - &install-test-tools
+        name: 🪛 Install nextest test-tool...
         run: |
-          cargo install cargo-llvm-cov --locked
-          cargo install cargo-audit --locked
+          cargo binstall --no-confirm cargo-nextest
+
+      - name: 🔨 Install coverage dev-tools...
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: 🔧️ Install audit dev-tools...
+        run: |
+          cargo binstall --no-confirm cargo-audit
 
       - name: 🧪 Running tests and code coverage...
         run: cargo llvm-cov nextest --workspace --fail-under-functions 100 --fail-under-lines 100 --fail-under-regions 100
@@ -50,20 +58,20 @@ jobs:
     name: Run integration tests
     runs-on: ubuntu-latest
     environment: test
-    needs: verify-changes
     steps:
       - *checkout
       - *install-rust
+      - *binstall
       - *install-test-tools
 
-      - name: 🐳Initiate Docker services...
+      - name: 🐳 Initiate Docker services...
         run: docker compose -f docker/docker-compose.yaml up -d
         env:
           MONGO_EXPRESS_REPLICAS: 0
           MONGO_INITDB_ROOT_USERNAME: ${{ vars.MONGO_INITDB_ROOT_USERNAME }}
           MONGO_INITDB_ROOT_PASSWORD: ${{ vars.MONGO_INITDB_ROOT_PASSWORD }}
 
-      - name: ⏯️Wait for Mongo to come online...
+      - name: ⏯️ Wait for Mongo to come online...
         run: |
           echo "Waiting for Mongo (max 3 minutes)..."
           START_TIME=$(date +%s)
@@ -82,14 +90,17 @@ jobs:
             sleep 2
           done
 
-      - name: 📈Test integrations...
+      - name: 📈 Test integrations...
         run: cargo nextest run --workspace --retries 2 -- --ignored integration
         env:
           MONGO_INITDB_ROOT_USERNAME: ${{ vars.MONGO_INITDB_ROOT_USERNAME }}
           MONGO_INITDB_ROOT_PASSWORD: ${{ vars.MONGO_INITDB_ROOT_PASSWORD }}
 
-      - name: ⏹️Gracefully shutdown Docker services...
+      - name: ⏹️ Gracefully shutdown Docker services...
         run: docker compose -f docker/docker-compose.yaml down -v
+        env:
+          MONGO_INITDB_ROOT_USERNAME: ""
+          MONGO_INITDB_ROOT_PASSWORD: ""
 
   release-plz-release:
     name: Release-plz publish
@@ -100,7 +111,7 @@ jobs:
     steps:
       - *checkout
       - *install-rust
-      - name: 📦Publish to crates.io...
+      - name: 📦 Publish to crates.io...
         uses: release-plz/action@v0.5
         with:
           command: release
@@ -121,7 +132,7 @@ jobs:
     steps:
       - *checkout
       - *install-rust
-      - name: 📤Create Pull Request...
+      - name: 📤 Create Pull Request...
         uses: release-plz/action@v0.5
         with:
           command: release-pr
