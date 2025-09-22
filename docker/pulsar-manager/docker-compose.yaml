@@ -1,0 +1,11 @@
+name: anc_rs_pulsar_manager
+services:
+  pulsar-manager:
+    image: apachepulsar/pulsar-manager:latest
+    platform: linux/amd64
+    ports:
+      - "9527:9527"
+      - "7750:7750"
+    environment:
+      - SPRING_CONFIGURATION_FILE=/pulsar-manager/pulsar-manager/application.properties
+      - PULSAR_MANAGER_OPTS=""

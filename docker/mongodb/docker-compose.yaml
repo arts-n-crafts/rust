@@ -1,24 +1,20 @@
-name: arts-n-crafts_rs
+name: anc_rs_mongodb
 services:
-  mongodb_rs:
+  mongodb:
     image: mongo:latest
-    container_name: mongodb_rs
-    hostname: mongodb_rs
+    hostname: mongodb
     restart: no
     volumes:
-      - mongodb_rs-data:/data/db/
-      - mongodb_rs-log:/var/log/mongodb/
+      - anc_rs_mongodb-data:/data/db/
+      - anc_rs_mongodb-log:/var/log/mongodb/
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
     ports:
       - "27017:27017"
 
-  mongo-express_rs:
+  mongodb-express:
     image: mongo-express:latest
-    container_name: mongo-express_rs
-    # docker compose --profile local up -d
-    profiles: [ "local" ]
     restart: no
     environment:
       ME_CONFIG_BASICAUTH: false
@@ -26,18 +22,18 @@ services:
       ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
       ME_CONFIG_MONGODB_PORT: 27017
-      ME_CONFIG_MONGODB_SERVER: mongodb_rs
+      ME_CONFIG_MONGODB_SERVER: mongodb
     ports:
-      - 8081:8081
+      - "8081:8081"
     depends_on:
-      - mongodb_rs
+      - mongodb
     deploy:
       replicas: ${MONGO_EXPRESS_REPLICAS:-1}
 
 volumes:
-  mongodb_rs-data:
+  anc_rs_mongodb-data:
     driver: local
-    name: mongo-data_rs
-  mongodb_rs-log:
+    name: mongodb-data
+  anc_rs_mongodb-log:
     driver: local
-    name: mongo-log_rs
+    name: mongodb-log
