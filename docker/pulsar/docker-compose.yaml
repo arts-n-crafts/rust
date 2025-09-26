@@ -64,6 +64,11 @@ services:
       # See: https://github.com/apache/bookkeeper/blob/405e72acf42bb1104296447ea8840d805094c787/bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/Cookie.java#L57-68
       - advertisedAddress=bookie
       - BOOKIE_MEM=-Xms512m -Xmx512m -XX:MaxDirectMemorySize=256m
+      - httpServerEnabled=true
+      - httpServerPort=8000
+    ports:
+      - "8000:8000"   # expose bookie HTTP server
+      - "3181:3181"   # bookie binary port (optional, broker needs it)
     depends_on:
       zookeeper:
         condition: service_healthy
@@ -90,8 +95,9 @@ services:
       - managedLedgerDefaultWriteQuorum=1
       - managedLedgerDefaultAckQuorum=1
       - advertisedAddress=broker
-      - advertisedListeners=external:pulsar://127.0.0.1:6650
+      - advertisedListeners=external:pulsar://broker:6650
       - PULSAR_MEM=-Xms512m -Xmx512m -XX:MaxDirectMemorySize=256m
+      - webSocketServiceEnabled=true
     depends_on:
       zookeeper:
         condition: service_healthy
