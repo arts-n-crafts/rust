@@ -3,7 +3,7 @@ use crate::domain::domain_event::DomainEvent;
 use crate::infrastructure::event_bus::event_producer::{EventProducer, EventProducerError};
 use async_trait::async_trait;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct InMemoryEventProducer {
     is_offline: bool,
 }
@@ -14,6 +14,12 @@ impl InMemoryEventProducer {
     }
     pub fn go_offline(&mut self) {
         self.is_offline = true
+    }
+}
+
+impl Default for InMemoryEventProducer {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -74,5 +80,11 @@ mod in_memory_event_bus_tests {
             .publish("users".to_string(), user_liked_event)
             .await;
         assert!(result.is_err());
+    }
+
+    #[rstest]
+    fn it_should_implement_default() {
+        let producer = InMemoryEventProducer::default();
+        assert_eq!(producer, InMemoryEventProducer::new());
     }
 }
