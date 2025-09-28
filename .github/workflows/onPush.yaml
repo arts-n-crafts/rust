@@ -22,7 +22,7 @@ jobs:
         name: ⚙️ Install Rust toolchain...
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: llvm-tools-preview
+          components: llvm-tools-preview, clippy, rustfmt
 
       - &binstall
         name: 🗄️ Install cargo-binstall...
@@ -65,7 +65,7 @@ jobs:
       - *install-test-tools
 
       - name: 🐳 Initiate Docker services...
-        run: docker compose -f docker/docker-compose.yaml up -d
+        run: docker compose -f docker/mongodb/docker-compose.yaml up -d
         env:
           MONGO_EXPRESS_REPLICAS: 0
           MONGO_INITDB_ROOT_USERNAME: ${{ vars.MONGO_INITDB_ROOT_USERNAME }}
@@ -97,7 +97,7 @@ jobs:
           MONGO_INITDB_ROOT_PASSWORD: ${{ vars.MONGO_INITDB_ROOT_PASSWORD }}
 
       - name: ⏹️ Gracefully shutdown Docker services...
-        run: docker compose -f docker/docker-compose.yaml down -v
+        run: docker compose -f docker/mongodb/docker-compose.yaml down -v
         env:
           MONGO_INITDB_ROOT_USERNAME: ""
           MONGO_INITDB_ROOT_PASSWORD: ""
