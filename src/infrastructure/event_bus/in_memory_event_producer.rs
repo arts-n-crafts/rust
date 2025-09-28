@@ -4,7 +4,18 @@ use crate::infrastructure::event_bus::event_producer::{EventProducer, EventProdu
 use async_trait::async_trait;
 
 #[derive(Clone)]
-pub struct InMemoryEventProducer;
+pub struct InMemoryEventProducer {
+    is_offline: bool,
+}
+
+impl InMemoryEventProducer {
+    fn new() -> Self {
+        InMemoryEventProducer { is_offline: false }
+    }
+    pub fn go_offline(&mut self) {
+        self.is_offline = true
+    }
+}
 
 #[async_trait]
 impl<TEventPayload> EventProducer<TEventPayload> for InMemoryEventProducer
@@ -16,7 +27,9 @@ where
         stream: String,
         event: DomainEvent<TEventPayload>,
     ) -> Result<(), EventProducerError> {
-        Ok(())
+        if self.is_offline {
+            return Err(EventProducerError::PublishEventFailed);
+        }
         todo!("Implement once EventConsumer is designed")
     }
 }
@@ -50,5 +63,16 @@ mod in_memory_event_bus_tests {
         let result = producer
             .publish("users".to_string(), user_liked_event)
             .await;
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn it_should_fail_gracefully_if_offline(user_liked_event: DomainEvent<UserEventPayload>) {
+        let mut producer = InMemoryEventProducer::new();
+        producer.go_offline();
+        let result = producer
+            .publish("users".to_string(), user_liked_event)
+            .await;
+        assert!(result.is_err());
     }
 }
